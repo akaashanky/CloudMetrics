@@ -1,0 +1,152 @@
+<ENVELOPE>
+  <HEADER>
+        <VERSION>1</VERSION>
+        <TALLYREQUEST>Export</TALLYREQUEST>
+        <TYPE>Data</TYPE>
+        <ID>AutoAutoCol Trial Balance</ID>
+  </HEADER>
+  <BODY>
+    <DESC>
+            <STATICVARIABLES>
+                <EXPLODEFLAG>No</EXPLODEFLAG>
+              <SVEXPORTFORMAT>$$SysName:ASCII</SVEXPORTFORMAT>
+              <SVCURRENTCOMPANY>{{CompanyName}}</SVCURRENTCOMPANY>
+          </STATICVARIABLES>
+  <TDL>
+     <TDLMESSAGE>
+
+         <REPORT NAME="AutoAutoCol Trial Balance">
+             <FORMS>AutoAutoCol Trial Balance</FORMS> 
+             <TITLE>$$LocaleString:"Trial Balance"</TITLE> 
+             <REPEAT>SVCurrentCompany, SVFromDate, SVToDate</REPEAT>
+             <Variable>AutoAutoCol TB Group, IsLedgerWise, SVPeriodicity,Open Balance Var</Variable>
+             <Set>IsLedgerWise      : No</Set>
+             <Variable>DoSetAutoColumn</Variable>
+             <Set>DoSetAutoColumn   : Yes</Set>
+             <Set>DSPRepeatCollection: "Period Collection"</Set>
+          </REPORT>
+
+         <FORM NAME="AutoAutoCol Trial Balance">
+              <TOPPARTS>AutoAutoCol TB Title, AutoAutoCol TB Details, Profit and Loss</TOPPARTS>
+              <HEIGHT>100% Page</HEIGHT> 
+              <WIDTH>100% Page</WIDTH> 
+              <Option>Set Auto Option : $$SetAutoColumns:SVFromDate,SVToDate</Option>
+          </FORM>
+
+         <PART NAME="AutoAutoCol TB Title">
+              <LINES>AutoAutoCol TB Title2</LINES> 
+              <SCROLLED>Vertical</SCROLLED> 
+              <COMMONBORDERS>Yes</COMMONBORDERS> 
+          </PART>
+
+         <LINE NAME="AutoAutoCol TB Title2">
+              <USE>AutoAutoCol TB Title3</USE> 
+              <LOCAL>Field    : AutoAutoCol TB DrAmt Field  : Set as    : @@DSPDateStr</LOCAL>  
+              <BORDER>Flush Totals</BORDER>              
+          </LINE>
+      
+         <LINE NAME="AutoAutoCol TB Title3">
+              <FIELDS>Name Field, AutoAutoCol TB DrAmt Field</FIELDS> 
+              <LOCAL>Field    : Default         : Type      : String</LOCAL> 
+              <LOCAL>Field    : Name Field        : Set as    : ""</LOCAL>
+              <REPEAT>AutoAutoCol TB DrAmt Field</REPEAT>
+          </LINE>
+
+          <PART NAME="AutoAutoCol TB Details">
+              <LINES>AutoAutoCol TB Details</LINES>
+              <Repeat>AutoAutoCol TB Details  : AutoAutoCol TB Group</Repeat>
+              <Total>AutoAutoCol TB DrAmt Field</Total>              
+              <SCROLLED>Vertical</SCROLLED> 
+              <COMMONBORDERS>Yes</COMMONBORDERS> 
+          </PART>
+
+          <Line Name="AutoAutoCol TB Details">
+              <Fields>AutoAutoCol TB Name Field,AutoAutoCol TB Amount Field</Fields> 
+              <Local>Field    : AutoAutoCol TB Name Field : Set as    : $$Name</Local>
+              <Local>Field   :  AutoAutoCol TB DrAmt Field : Set as    : $ClosingBalance</Local>
+              <Repeat>AutoAutoCol TB Amount Field</Repeat>
+          </Line>
+
+          <PART NAME="Profit and Loss">
+              <LINES>Profit and Loss</LINES>
+              <SCROLLED>Vertical</SCROLLED> 
+              <COMMONBORDERS>Yes</COMMONBORDERS> 
+          </PART>
+
+          <Line Name="Profit and Loss">
+              <Fields>AutoAutoCol TB Name Field,AutoAutoCol TB Amount Field</Fields> 
+              <Local>Field    : AutoAutoCol TB Name Field : Set as    : Opening Balance</Local>
+              <Local>Field   :  AutoAutoCol TB DrAmt Field : Set as    :  $$Total:AutoAutoColTBDrAmtField</Local>
+              <Repeat>AutoAutoCol TB Amount Field</Repeat>
+          </Line>
+
+        <FIELD NAME="AutoAutoCol TB Name Field">
+              <USE>Name Field</USE> 
+              <Variable>AutoAutoCol TB Group</Variable> 
+              <Display>AutoAutoCol Trial Balance    : $$IsGroup</Display>
+              <Option>AutoAutoCol TB LedName Field  : $$IsLedger</Option>
+        </FIELD>
+
+        <FIELD NAME="AutoAutoCol TB Amount Field">
+              <Fields>AutoAutoCol TB DrAmt Field</Fields>
+              <Display>AutoAutoCol Trial Balance    : $$IsGroup</Display> 
+              <Display>Ledger Monthly Summary    : $$IsLedger</Display> 
+        </FIELD>
+
+        <FIELD NAME="AutoAutoCol TB DrAmt Field">
+            <USE>Amount Field</USE> 
+            <Style>Normal</Style> 
+         </FIELD>
+
+         <FIELD NAME="AutoAutoCol TB CrAmt Field">
+            <USE>Amount Field</USE> 
+            <Style>Normal</Style> 
+         </FIELD>
+
+         <COLLECTION NAME="AutoAutoCol TB Group">
+              <Collection>AutoAutoCol TB Group1,AutoAutoCol TB Group2</Collection>
+              <ChildOf>AutoAutoCol TB Group1</ChildOf>
+              <BelongsTo>Yes</BelongsTo>
+          </COLLECTION>
+
+         <COLLECTION NAME="AutoAutoCol TB Group1">
+              <Type>Group</Type> 
+              <FILTER>NoProfit</FILTER> 
+              <ChildOf>{{ParentOFTB1}}</ChildOf>
+              <Fetch>Name, ClosingBalance</Fetch>
+          </COLLECTION>
+
+          <COLLECTION NAME="AutoAutoCol TB Group2">
+              <Type>Ledger</Type> 
+              <FILTER>NoProfit</FILTER> 
+              <ChildOf>{{ParentOFTB2}}</ChildOf>
+              <Fetch>Name, ClosingBalance</Fetch>
+          </COLLECTION>
+
+          <Variable name="AutoAutoCol TB Group">
+              <Type>String</Type>
+              <Default>""</Default>
+              <Volatile>Yes</Volatile>
+          </Variable>
+
+          <Variable name="Open Balance Var">
+              <Type>Number</Type>
+              <Default>0</Default>
+          </Variable>
+
+           <Object name="MyAutoMonthly" ISINITIALIZE="Yes">
+              <Name>$$LocaleString:"Monthly"</Name>
+              <VarName>"SVFromDate, SVToDate"</VarName>
+              <CollName>"Period Collection"</CollName>
+              <BelongsIf>"Yes"</BelongsIf>
+              <IsAgeWise>No</IsAgeWise>
+              <Periodicity>"Month"</Periodicity>
+           </Object>
+
+         <SYSTEM TYPE="Formulae" NAME="NoProfit"> NOT $$IsLedgerProfit AND $ClosingBalance > 0</SYSTEM> 
+
+      </TDLMESSAGE>
+  </TDL>
+    </DESC>
+  </BODY>
+</ENVELOPE>

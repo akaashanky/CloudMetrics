@@ -1,0 +1,12 @@
+Capital Account,Retained Earnings(RE),Current Earnings(CE),Other Equity(OEQ),
+Current Liabilities,Short Term Debt(STD),Accounts Payable(AP),Tax Liability(TL),Other Current Liabilities(OCL),
+Investments,Fixed Assets(FA),Intangible Assets(IA),Investment or Other NCAs(ONCA),
+Current Assets,Cash & Equivalents(CASH),Accounts Receivable(AR),Inventory(INV),Work in Progress(WIP),Other Current Assets(OCA),
+Misc. Expenses (ASSET),Other Current Assets(OCA),
+Suspense A/c,Other Current Liabilities(OCL),
+Direct Incomes,Revenue(REV),
+Direct Expenses,Variable Cost of Sales(VCOS),Fixed Cost of Sales(FCOS),Non-Cash Cost of Sales(DEP),
+Indirect Incomes,Other Income(AINC),Interest Income(IINC),
+Indirect Expenses,Other Expenses(OEXP),Variable Expenses(VEXP),Fixed Expenses(FEXP),Interest Expense(IEXP),Tax(TEXP),
+
+
