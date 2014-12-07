@@ -3,8 +3,6 @@ package com.cloudmetrics.businesslogic.financial.kpi;
 import java.util.ArrayList;
 import java.util.List;
 
-import com.cloudmetrics.api.response.GenericResponse;
-
 public class Profitability{
 	String revenue;
 	String grossProfit;
