@@ -14,6 +14,10 @@ Release/
 ipch/
 *.opensdf
 *.sdf
+
+# Eclipse #
+###########
+.settings/
  
 # Packages #
 ############
@@ -23,7 +27,6 @@ ipch/
 *.dmg
 *.gz
 *.iso
-*.jar
 *.rar
 *.tar
 *.zip

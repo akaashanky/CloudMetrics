@@ -1,0 +1,103 @@
+<?xml version="1.0" encoding="UTF-8"?>  
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:p="http://www.springframework.org/schema/p"
+	xmlns:context="http://www.springframework.org/schema/context" xmlns:tx="http://www.springframework.org/schema/tx"
+	xmlns:mvc="http://www.springframework.org/schema/mvc" xmlns:aop="http://www.springframework.org/schema/aop"
+	xmlns:oxm="http://www.springframework.org/schema/oxm"
+	xmlns:jee="http://www.springframework.org/schema/jee"
+	xsi:schemaLocation="
+        http://www.springframework.org/schema/beans 
+        http://www.springframework.org/schema/beans/spring-beans-3.0.xsd
+        http://www.springframework.org/schema/context 
+        http://www.springframework.org/schema/context/spring-context-3.0.xsd
+        http://www.springframework.org/schema/tx
+	    http://www.springframework.org/schema/tx/spring-tx-3.0.xsd
+	    http://www.springframework.org/schema/mvc     
+	    http://www.springframework.org/schema/mvc/spring-mvc-3.0.xsd
+	    http://www.springframework.org/schema/aop
+        http://www.springframework.org/schema/aop/spring-aop-3.0.xsd
+        http://www.springframework.org/schema/oxm
+    	http://www.springframework.org/schema/oxm/spring-oxm-3.0.xsd
+    	http://www.springframework.org/schema/jee
+    	http://www.springframework.org/schema/jee/spring-jee-3.0.xsd">      
+      <!--Enables automatic mapping of objects to and from JSON -->  
+      <mvc:annotation-driven/>  
+      
+      <!--  
+            Setup spring to pull in @Controller, @RequestMapping, etc Configuration scans specified packages  
+            for classes configured as Spring managed beans and automatically sets up objects annotated with  
+            @Controller, @Service etc.  
+      -->  
+      
+      <context:component-scan base-package="com.cloudmetrics.controllers" />
+      
+      <bean id="applicationProperties" class="org.springframework.beans.factory.config.PropertiesFactoryBean">
+  			<property name="location" value="classpath:com/cloudmetrics/properties/application.properties"/>
+	  </bean>   
+     
+      <bean class="org.springframework.web.servlet.mvc.annotation.DefaultAnnotationHandlerMapping" />
+      
+      <!-- Base Service for CloudMetrics rest services -->
+      <bean id="baseService" class="com.cloudmetrics.service.BaseService" abstract="true">
+      		<property name="applicationProperties" ref="applicationProperties"></property>
+      </bean>
+      
+   	  <bean name="companyDao" class="com.cloudmetrics.dao.CompanyDao">
+		<property name="sessionFactory" ref="CloudMetricsSessionFactory" />
+   	  </bean> 
+   	  
+   	  <bean id="editCompanyService" class="com.cloudmetrics.service.company.EditCompanyService">
+   	        <property name="companyDao" ref="companyDao"/>
+   	  </bean>
+        
+      <!--Configures view for returning JSON to the client -->  
+  <!--     <bean class="org.springframework.web.servlet.view.json.MappingJacksonJsonView">  
+           <property name="contentType" value="text/plain"/>  
+      </bean>   -->
+      
+      <!--maps handler methods based on HTTP paths-->  
+  <!--     <bean class="org.springframework.web.servlet.mvc.annotation.AnnotationMethodHandlerAdapter">  
+           <property name="messageConverters">  
+                <util:list id="beanList">  
+                     <ref bean="jsonMessageConverter"/>  
+                </util:list>  
+           </property>  
+      </bean>
+        
+      Converts JSON to POJO and vice versa  
+      <bean id="jsonMessageConverter" class="org.springframework.http.converter.json.MappingJacksonHttpMessageConverter"/>   -->
+	
+      <bean id="CloudMetricsSessionFactory"
+		class="org.springframework.orm.hibernate3.annotation.AnnotationSessionFactoryBean">
+		<property name="dataSource" ref="CloudMetricsDataSource" />
+		<property name="packagesToScan">
+			<list>
+				<value>com.cloudmetrics.domain</value>
+			</list>
+		</property>
+		<property name="hibernateProperties">
+			<value>
+				hibernate.format_sql=true
+				hibernate.show_sql=true
+				hibernate.jdbc.batch_size=25
+				
+				hibernate.dialect=org.hibernate.dialect.MySQLDialect
+			</value>
+		</property>
+	</bean>
+	
+	<bean id="CloudMetricsDataSource"
+		class="org.springframework.jdbc.datasource.DriverManagerDataSource">
+		<property name="driverClassName" value="com.mysql.jdbc.Driver" />
+		<property name="url" value="jdbc:mysql://localhost:3306/cloudmetrics" />
+		<property name="username" value="root" />
+		<property name="password" value="CloudMetrics1" />
+	</bean>
+	
+	<bean id="transactionManager"
+		class="org.springframework.orm.hibernate3.HibernateTransactionManager">
+		<property name="sessionFactory" ref="CloudMetricsSessionFactory" />
+	</bean>
+	<tx:annotation-driven transaction-manager="transactionManager" />
+	
+ </beans>  

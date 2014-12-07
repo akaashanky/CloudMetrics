@@ -1,0 +1,49 @@
+.leftContainer {
+
+	ul {
+		margin : 0px;
+		
+		li {
+			width : 170px;
+			height: 30px;
+			overflow: hidden;
+			border-top: 1px;
+			border-bottom : 1px;
+			border-left : 0px;
+			border-right : 1px;
+			border-style : solid;
+			padding : 10px 15px;
+			a {
+				font-size : 16px; 
+				vertical-align : middle;
+				box-sizing : border-box;
+			}
+		}
+
+		li.active {
+			background-color: black;
+			a {
+				color : white;
+			}
+			
+		}
+		li.inactive {
+			background-color: white;
+			a {
+				color : grey;
+			}
+		}
+
+		a:hover  {
+				text-decoration-style : none;
+		}
+
+		li:hover {
+			background-color : blue;
+			cursor : pointer;
+		}
+
+	}
+
+
+}
