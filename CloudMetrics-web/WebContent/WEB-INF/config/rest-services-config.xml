@@ -49,6 +49,9 @@
    	  <bean id="editCompanyService" class="com.cloudmetrics.service.company.EditCompanyService">
    	        <property name="companyDao" ref="companyDao"/>
    	  </bean>
+   	  
+   	  <bean id="kpiService" class="com.cloudmetrics.service.financial.KPIService">
+   	  </bean>
         
       <!--Configures view for returning JSON to the client -->  
   <!--     <bean class="org.springframework.web.servlet.view.json.MappingJacksonJsonView">  
