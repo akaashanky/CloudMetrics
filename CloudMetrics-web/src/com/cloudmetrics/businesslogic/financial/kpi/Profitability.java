@@ -5,9 +5,13 @@ import java.util.List;
 
 public class Profitability{
 	String revenue;
+	double momRevenueGrowth;
 	String grossProfit;
+	double momGrossProfitGrowth;
 	String netProfit;
+	double momNetProfitGrowtth;
 	String profitMargin;
+	String financialYear;
 	
 	List<String> monthlyRevenue = new ArrayList<String>();
 	List<String> monthlyGrossProfit = new ArrayList<String>();
@@ -16,9 +20,13 @@ public class Profitability{
 	
 	public Profitability(boolean test){
 		revenue = "20,345,677";
+		momRevenueGrowth = 7.9;
 		grossProfit = "9,980,879";
+		momGrossProfitGrowth = 6.7;
 		netProfit = "3,987,234";
+		momNetProfitGrowtth = -3.4;
 		profitMargin = "13.23%";
+		financialYear = "FY 2013-14";
 		
 		monthlyRevenue.add("3,456,523");
 		monthlyRevenue.add("2,873,000");
@@ -91,4 +99,35 @@ public class Profitability{
 		this.monthlyProfitMargin = monthlyProfitMargin;
 	}
 
+	public double getMomRevenueGrowth() {
+		return momRevenueGrowth;
+	}
+
+	public void setMomRevenueGrowth(double momRevenueGrowth) {
+		this.momRevenueGrowth = momRevenueGrowth;
+	}
+
+	public double getMomGrossProfitGrowth() {
+		return momGrossProfitGrowth;
+	}
+
+	public void setMomGrossProfitGrowth(double momGrossProfitGrowth) {
+		this.momGrossProfitGrowth = momGrossProfitGrowth;
+	}
+
+	public double getMomNetProfitGrowtth() {
+		return momNetProfitGrowtth;
+	}
+
+	public void setMomNetProfitGrowtth(double momNetProfitGrowtth) {
+		this.momNetProfitGrowtth = momNetProfitGrowtth;
+	}
+
+	public String getFinancialYear() {
+		return financialYear;
+	}
+
+	public void setFinancialYear(String financialYear) {
+		this.financialYear = financialYear;
+	}
 }
