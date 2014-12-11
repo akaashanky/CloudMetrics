@@ -11,4 +11,7 @@ public class ApplicationConstants {
 	
 	public static final String UPLOADED_FINDATA_LOCATION_DEV = "uploaded.findata.location.dev";
 	public static final String UPLOADED_FINDATA_LOCATION_PROD = "uploaded.findata.location.prod";
+	
+	public static final String KPI_PROFITABILITY = "com.cloudmetrics.businesslogic.financial.kpi.Profitability";
+	public static final String COMPANY_ID = "CompanyId";
 }

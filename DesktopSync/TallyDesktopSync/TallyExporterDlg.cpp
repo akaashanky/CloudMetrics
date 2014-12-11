@@ -128,6 +128,16 @@ BOOL CTallyExporterDlg::OnInitDialog()
 		export_master.close();
 	}
 	else cout << AfxMessageBox("Unable to open export_master.xml file"); 
+
+	//create the generated dir inside data
+	if (!CreateDirectory("data\\generated",NULL)) {
+	  if (GetLastError() == ERROR_ALREADY_EXISTS) {
+		// directory already exists. Do nothing
+	  } else {
+		AfxMessageBox("Could not create \"generated\" directory!");
+		return false;
+	  }
+	}
 	
 	
 	return TRUE;  // return TRUE  unless you set the focus to a control
@@ -279,8 +289,8 @@ void CTallyExporterDlg::OnBnClickedSyncmasteranddata()
 	this->GetDlgItemTextA(IDC_EMAIL,emailIdRef);
 	m_emailId = emailIdRef;
 
-	m_monthlyCsvFileName = companyNameRef + "__" + emailIdRef + "__"  + "findata_monthly.csv";
-	m_yearlyCsvFileName = companyNameRef + "__" + emailIdRef + "__" + "findata_yearly.csv";
+	m_monthlyCsvFileName = companyNameRef + "__" + emailIdRef + "__"  + "findatamonthly.csv";
+	m_yearlyCsvFileName = companyNameRef + "__" + emailIdRef + "__" + "findatayearly.csv";
 	m_masterXMLFileName = companyNameRef + "__" + emailIdRef + "__" + "master.xml";
 	m_zipFileFinData = companyNameRef + "__" + emailIdRef + "__"  + "cloudmetricdata.zip";
 
@@ -305,9 +315,9 @@ void CTallyExporterDlg::OnBnClickedSyncmasteranddata()
 	string& finalCSVContentForYearlyFileRef = finalCSVContentForYearlyFile;
 	string finalXMLContentForMasterFile;
 	string& finalXMLContentForMasterFileRef = finalXMLContentForMasterFile;
-	finalCSVContentForMonthlyFileRef = "CompanyName," + m_companyName + ",\n" + "EmailID," + m_emailId + ",\n" + "Period,Monthly," + "\n";
-	finalCSVContentForYearlyFileRef = "CompanyName," + m_companyName + ",\n" + "EmailID," + m_emailId + ",\n" + "Period,Yearly," + "\n";
-	finalXMLContentForMasterFileRef = "<CompanyName>" + m_companyName + "</CompanyName>" + "<EmailID>" + m_emailId + "</EmailID>" + "\n";
+	//finalCSVContentForMonthlyFileRef = "CompanyName," + m_companyName + ",\n" + "EmailID," + m_emailId + ",\n" + "Period,Monthly," + "\n";
+	//finalCSVContentForYearlyFileRef = "CompanyName," + m_companyName + ",\n" + "EmailID," + m_emailId + ",\n" + "Period,Yearly," + "\n";
+	//finalXMLContentForMasterFileRef = "<CompanyName>" + m_companyName + "</CompanyName>" + "<EmailID>" + m_emailId + "</EmailID>" + "\n";
 
 	GetMonthlyTBXMLForACompany(trialBalanceMonthlyXMLRequestForACompanyRef);
 	trialBalanceMonthlyXMLRequestCSTRRef = trialBalanceMonthlyXMLRequestForACompanyRef.c_str();

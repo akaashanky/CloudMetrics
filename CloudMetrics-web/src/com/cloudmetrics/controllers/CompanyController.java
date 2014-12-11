@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.ResponseBody;
 import com.cloudmetrics.common.MessageCollection;
 import com.cloudmetrics.domain.Company;
 import com.cloudmetrics.service.company.EditCompanyService;
+import com.cloudmetrics.util.ApplicationConstants;
 import com.cloudmetrics.util.CollectionOfUtilityMethods;
 import com.cloudmetrics.util.EnumCollection.EventStatus;
 import com.cloudmetrics.web.AppResponse;
@@ -43,7 +44,7 @@ public class CompanyController {
     		return new AppResponse<Company>(EventStatus.nosession.getValue(), null, MessageCollection.NEED_TO_LOGIN_TO_ACCESS_THIS_FEATURE);
     	}
     	HttpSession session = req.getSession(false);
-    	Integer CompanyId = (Integer)session.getAttribute("Companyid");
+    	Integer CompanyId = (Integer)session.getAttribute(ApplicationConstants.COMPANY_ID);
     	if(CompanyId == null){
     		return new AppResponse<Company>(EventStatus.nosession.getValue(), null, MessageCollection.NEED_TO_LOGIN_TO_ACCESS_THIS_FEATURE);
     	}    	

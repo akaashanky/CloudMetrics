@@ -92,7 +92,7 @@ public class CollectionOfUtilityMethods {
     	if(session == null){
     		return isReqInSession;
     	}
-    	Integer companyId = (Integer)session.getAttribute("companyId");
+    	Integer companyId = (Integer)session.getAttribute(ApplicationConstants.COMPANY_ID);
     	if(companyId == null){
     		return isReqInSession;
     	} 

@@ -46,6 +46,8 @@ public class Profitability extends BaseFinancialInfo{
 			//The top most is the closing balance for this year.
 			Double thisYearClosingBalance = primaryGroupOrLedger.getAnnualClosingBalance();
 			List<Double> monthlyClosingBalance = primaryGroupOrLedger.getMonthlyClosingBalance();
+			if(thisYearClosingBalance == null || monthlyClosingBalance == null)
+				continue;
 			if(primaryGroupOrLedger instanceof Group){
 				Group group = (Group)primaryGroupOrLedger;
 				if(group.isRevenue()){ //Remember the negativity or positivity when deciding on "add" or "subtract"
@@ -84,15 +86,31 @@ public class Profitability extends BaseFinancialInfo{
 	}
 	
 	public List<Double> addOneAmountListToAnother(List<Double> result, List<Double> target){
-		for(int i = 0; i < target.size(); i++){
-			result.set(i, result.get(i) + target.get(i));
+		boolean isThisACopyTask = false; //If result and target are not of same size, simply copy target data to result
+		if(result.size() != target.size()){
+			isThisACopyTask = true;
+		}
+		for(int i = 0; i < target.size() - 1; i++){
+			if(isThisACopyTask == false){
+				result.set(i, result.get(i) + target.get(i));	
+			}else{
+				result.set(i, target.get(i));
+			}
 		}
 		return result;
 	}
 	
 	public List<Double> subtractOneAmountListFromAnother(List<Double> result, List<Double> target){
-		for(int i = 0; i < target.size(); i++){
-			result.set(i, result.get(i) - target.get(i));
+		boolean isThisACopyTask = false; //If result and target are not of same size, simply copy target data to result
+		if(result.size() != target.size()){
+			isThisACopyTask = true;
+		}
+		for(int i = 0; i < target.size() - 1; i++){
+			if(isThisACopyTask == false){
+				result.set(i, result.get(i) - target.get(i));	
+			}else{
+				result.set(i, target.get(i) * -1.0 );
+			}
 		}
 		return result;
 	}

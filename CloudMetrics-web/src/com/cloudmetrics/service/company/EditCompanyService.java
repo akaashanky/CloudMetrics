@@ -53,6 +53,7 @@ public class EditCompanyService {
 		//Check if the email is not duplicate
 		if(doesTheEmailExist(email)){
 			response.setDescription(MessageCollection.THIS_EMAIL_ALREADY_EXISTS);
+			return response;
 		}
 		
 		Company company = new Company();
@@ -73,7 +74,51 @@ public class EditCompanyService {
 
 		return response;
 	}
-			
+
+	/**
+	 * This method is called first to create an Company in the system.
+	 * This must be entry point.
+	 * 
+	 * @param firstName
+	 * @param lastName
+	 * @param email
+	 * @param phone
+	 * @param isHidden
+	 * @param password
+	 * @return
+	 */
+	@Transactional
+	public AppResponse<Company> createCompanyFromSyncTool(
+			String companyName,
+			String email){
+		AppResponse<Company> response = new AppResponse<>();
+		response.setCode(EventStatus.failure.getValue());
+		//Check if the email is not duplicate
+		if(doesTheEmailExist(email)){
+			response.setDescription(MessageCollection.THIS_EMAIL_ALREADY_EXISTS);
+			return response;
+		}
+		
+		Company company = new Company();
+		company.setEmail(email);
+		company.setCompanyName(companyName);
+		company.setIsDirty("1");
+		
+		Integer CompanyId = -1;
+		try {
+			CompanyId = (Integer)companyDao.save(company);
+			company.setCompanyId(CompanyId);
+			response.setData(company);
+			response.setCode(EventStatus.success.getValue());
+		} catch (CommonException e) {
+			e.printStackTrace();
+			response.setDescription(MessageCollection.INTERNAL_ERROR_WHILE_ADDING_Company);			
+			return response;
+		}
+
+		return response;
+	}
+
 	/**
 	 * Get Company by Id
 	 */
@@ -88,13 +133,28 @@ public class EditCompanyService {
 			
 			appResponse.setCode(EventStatus.success.getValue());
 			appResponse.setData(company);
-			companyDao.update(company);
 		} catch (CommonException e) {
 			e.printStackTrace();
 			appResponse.setDescription(MessageCollection.ERROR_ENGINEERS_WILL_FIX_IT);
 		}
 		
 		return appResponse; 
+	}
+	
+	/**
+	 * Get Company by email and company name
+	 * TODO extend it to include company name after the multipart request is fixed
+	 */
+	@Transactional
+	public Company getCompanyByEmail(String email){
+		Company company = null;
+		try {
+			company	= (Company)companyDao.readByEmail(email);
+		} catch (CommonException e) {
+			e.printStackTrace();
+		}
+		
+		return company; 
 	}
 	
 	/**
@@ -161,6 +221,68 @@ public class EditCompanyService {
 		return appResponse; 
 	}
 
+	/**
+	 * Set clean or dirty state for a company.
+	 * @param id
+	 * @param password
+	 * @return
+	 */
+	@Transactional
+	public AppResponse<Integer> setCleanOrDirtyState(Integer companyId, boolean isDirty){
+		Company company = null;
+		AppResponse<Integer> appResponse = new AppResponse<Integer>();
+		appResponse.setCode(EventStatus.failure.getValue());
+		try {
+			company	= (Company)companyDao.readById(companyId);
+		} catch (CommonException e) {
+			e.printStackTrace();
+			return appResponse;
+		}	
+		
+		if(isDirty){
+			company.setIsDirty("1");
+		}else{
+			company.setIsDirty("0");
+		}
+	
+		try {
+			companyDao.update(company);
+			appResponse.setCode(EventStatus.success.getValue());
+			appResponse.setData(company.getCompanyId());
+		} catch (CommonException e) {
+			e.printStackTrace();
+			appResponse.setDescription(MessageCollection.INTERNAL_ERROR);
+			return appResponse;
+		}			
+		return appResponse;
+	}
+	
+	/**
+	 * 
+	 * @param companyId
+	 * @param isDirty
+	 * @return
+	 */	
+	@Transactional
+	public AppResponse<Boolean> isStateDirty(Integer companyId){
+		Company company = null;
+		AppResponse<Boolean> appResponse = new AppResponse<>();
+		appResponse.setCode(EventStatus.failure.getValue());
+		try {
+			company	= (Company)companyDao.readById(companyId);
+		} catch (CommonException e) {
+			e.printStackTrace();
+			return appResponse;
+		}	
+		String state = company.getIsDirty();
+		if("0".equals(state)){
+			appResponse.setData(false);
+		}else{
+			appResponse.setData(true);
+		}
+		appResponse.setCode(EventStatus.success.getValue());
+		return appResponse;
+	}
 
 	public CompanyDao getCompanyDao() {
 		return companyDao;

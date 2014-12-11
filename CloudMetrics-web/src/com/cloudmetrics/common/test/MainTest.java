@@ -18,7 +18,7 @@ public class MainTest {
 	  try {
 		CompanyFinancialData financialData = new CompanyFinancialData();
 		XMLToModelObjectConverter.construct(financialData, "d:/__junk__/LedgerMaster.xml");
-		FinancialDataPopulationService.populate(financialData, "d:/__junk__/tb2_result.csv");
+		FinancialDataPopulationService.populateMonthlyData(financialData, "d:/__junk__/tb2_result.csv");
 		System.out.println(financialData);
 	} catch (XPathExpressionException e) {
 		// TODO Auto-generated catch block

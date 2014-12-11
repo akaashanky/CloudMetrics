@@ -27,9 +27,13 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.context.support.SpringBeanAutowiringSupport;
 
 import com.cloudmetrics.common.MessageCollection;
+import com.cloudmetrics.domain.Company;
 import com.cloudmetrics.service.company.EditCompanyService;
 import com.cloudmetrics.util.CollectionOfUtilityMethods;
+import com.cloudmetrics.util.UnZip;
+import com.cloudmetrics.util.EnumCollection.EventStatus;
 import com.cloudmetrics.util.EnvManager;
+import com.cloudmetrics.web.AppResponse;
 
 /**
  * This class handles the image upload for the time.
@@ -75,20 +79,38 @@ public class UploadServlet extends HttpServlet {
         JSONArray json = new JSONArray();
         try {
             List<FileItem> items = uploadHandler.parseRequest(request);
+      	           	
             for (FileItem item : items) {
-                if (!item.isFormField()) {
-                	    String finDataStorageLocation = EnvManager.getFinancialDataStorageLocation();
-                	    File storageDir = new File(finDataStorageLocation);
-                	    //If storage dir does not exist, create it.
-                	    if(!storageDir.exists()){
-                	    	storageDir.mkdir();
-                	    }
-                        File file = new File(finDataStorageLocation, item.getName());
-                        item.write(file);
-                        //save it to the DB
-                        //TODO:REMOVE editCompanyService.saveCompanyPhoto(companyId, "../imgupload?getfile=" + item.getName());                        
+                if (!item.isFormField()) { //It will enter into this loop just once!
+            	    String finDataStorageLocation = EnvManager.getFinancialDataStorageLocation();
+            	    File storageDir = new File(finDataStorageLocation);
+            	    //If storage dir does not exist, create it.
+            	    if(!storageDir.exists()){
+            	    	storageDir.mkdir();
+            	    }
+            	    //get the name and other data of the customers from the file name.
+                	String fileName = item.getName();
+                	String[] temp = fileName.split("__",-1);
+                	String emailId = temp[temp.length - 2];
+                	String companyName = temp[0];
+                	Company company = editCompanyService.getCompanyByEmail(emailId);
+                	//If company does not exist, create it
+                	if(company == null){
+                		AppResponse<Company> companyCreationResponse = editCompanyService.createCompanyFromSyncTool(companyName, emailId);
+                		if(companyCreationResponse.getCode() == EventStatus.failure.getValue()){
+                			log("Company creation was not successful");
+                		}else{
+                			company = companyCreationResponse.getData();
+                		}
+                	} 
+                	//At this point we have a "Company"
+                    File zipFile = new File(finDataStorageLocation, item.getName());
+                    item.write(zipFile);    
+                    //Now unzip it
+                    UnZip.unZipSyncData(zipFile.getAbsolutePath(), finDataStorageLocation, company.getCompanyId());
+                    editCompanyService.setCleanOrDirtyState(company.getCompanyId(), true);
                 }
-            }
+          } 
         } catch (FileUploadException e) {
                 throw new RuntimeException(e);
         } catch (Exception e) {

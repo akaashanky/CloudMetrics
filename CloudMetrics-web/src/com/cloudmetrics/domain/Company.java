@@ -27,6 +27,17 @@ public class Company {
 
 	@Column
 	private String email;
+	
+	@Column
+	private String isDirty;
+
+	public String getIsDirty() {
+		return isDirty;
+	}
+
+	public void setIsDirty(String isDirty) {
+		this.isDirty = isDirty;
+	}
 
 	public Integer getCompanyId() {
 		return companyId;
