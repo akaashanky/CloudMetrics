@@ -327,10 +327,10 @@ void CTallyExporterDlg::OnBnClickedSyncmasteranddata()
 	WriteCSVDataToFile(finalCSVContentForYearlyFileRef, m_yearlyCsvFileName);
 	WriteCSVDataToFile(finalXMLContentForMasterFileRef, m_masterXMLFileName);
 
-	HZIP hz = CreateZip(("data\\" + m_zipFileFinData).c_str(),0);
-	ZipAdd(hz,m_monthlyCsvFileName.c_str(), ("data\\" + m_monthlyCsvFileName).c_str());
-	ZipAdd(hz,m_yearlyCsvFileName.c_str(), ("data\\" + m_yearlyCsvFileName).c_str());
-	ZipAdd(hz,m_masterXMLFileName.c_str(), ("data\\" + m_masterXMLFileName).c_str());
+	HZIP hz = CreateZip(("data\\generated\\" + m_zipFileFinData).c_str(),0);
+	ZipAdd(hz,m_monthlyCsvFileName.c_str(), ("data\\generated\\" + m_monthlyCsvFileName).c_str());
+	ZipAdd(hz,m_yearlyCsvFileName.c_str(), ("data\\generated\\" + m_yearlyCsvFileName).c_str());
+	ZipAdd(hz,m_masterXMLFileName.c_str(), ("data\\generated\\" + m_masterXMLFileName).c_str());
 	CloseZip(hz);
 
 	//TODO: Need to configure
@@ -422,7 +422,7 @@ void CTallyExporterDlg::GetMasterXMLForACompany(std::string& masterXMLStringRequ
 void CTallyExporterDlg::WriteCSVDataToFile(string& csvContent, string& csvFileName)
 {	
 	ofstream myfile;
-	myfile.open ("data\\" + csvFileName);
+	myfile.open ("data\\generated\\" + csvFileName);
 	
 	myfile<< csvContent + "\n";
 	myfile.close();
@@ -447,7 +447,7 @@ void CTallyExporterDlg::uploadZipFile(CString strServerUrl,CString strServerUplo
 	void* pBuffer = malloc(dwChunkLength);
 	CFile file ;
 
-	if (!file.Open(("data\\" + m_zipFileFinData).c_str(),
+	if (!file.Open(("data\\generated\\" + m_zipFileFinData).c_str(),
 	  CFile::modeRead | CFile::shareDenyWrite))
 	 {
 			return;

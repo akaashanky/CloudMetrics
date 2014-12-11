@@ -1,3 +1,7 @@
+#Program generated intermediate files#
+######################################
+generated/
+
 # Compiled source #
 ###################
 *.com
