@@ -24,7 +24,7 @@ public class KPIService {
 		FinancialDataPopulationService.populate(financialData, "d:/__junk__/tb2_result.csv");
 		
 		appResponse.setCode(EventStatus.success.getValue());
-		appResponse.setData(new Profitability(true));
+		appResponse.setData(new Profitability(financialData));
 		
 		return appResponse; 
 	}

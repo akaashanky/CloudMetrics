@@ -34,15 +34,14 @@ public class EnvManager {
 	        }else{
 	        	return Environment.Prod;
 	        }
-	}
+	}	
 	
-	public static String getUploadedImageStorageLocation(){
+	public static String getFinancialDataStorageLocation(){
 		if(getEnvironment() == Environment.Dev){
-			return appConfig_.getString(ApplicationConstants.UPLOADED_IMAGE_LOCATION_DEV);
+			return appConfig_.getString(ApplicationConstants.UPLOADED_FINDATA_LOCATION_DEV);
 		}else{
-			return appConfig_.getString(ApplicationConstants.UPLOADED_IMAGE_LOCATION_PROD);
+			return appConfig_.getString(ApplicationConstants.UPLOADED_FINDATA_LOCATION_PROD);
 		}
 	}
-	
 	public EnvManager(){}
 }

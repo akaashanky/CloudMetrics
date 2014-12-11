@@ -7,7 +7,9 @@ public class GenericGroupOrLedger {
 	String name;
 	String reservedName;
 	
-	List<String> monthlyClosingBalance;
+	List<Double> monthlyClosingBalance;
+	List<Double> quarterlyClosingBalance;
+	Double annualClosingBalance;
 	
 	@Override
 	public String toString() {
@@ -29,7 +31,7 @@ public class GenericGroupOrLedger {
 	@Override
 	public int hashCode() {
 		return this.name.hashCode();
-	}
+	}	
 
 	public GenericGroupOrLedger getParent() {
 		return parent;
@@ -55,12 +57,27 @@ public class GenericGroupOrLedger {
 		this.reservedName = reservedName;
 	}
 
-	public List<String> getMonthlyClosingBalance() {
+	public List<Double> getMonthlyClosingBalance() {
 		return monthlyClosingBalance;
 	}
 
-	public void setMonthlyClosingBalance(List<String> monthlyClosingBalance) {
+	public void setMonthlyClosingBalance(List<Double> monthlyClosingBalance) {
 		this.monthlyClosingBalance = monthlyClosingBalance;
-	}	
-	
+	}
+
+	public List<Double> getQuarterlyClosingBalance() {
+		return quarterlyClosingBalance;
+	}
+
+	public void setQuarterlyClosingBalance(List<Double> quarterlyClosingBalance) {
+		this.quarterlyClosingBalance = quarterlyClosingBalance;
+	}
+
+	public Double getAnnualClosingBalance() {
+		return annualClosingBalance;
+	}
+
+	public void setAnnualClosingBalance(Double annualClosingBalance) {
+		this.annualClosingBalance = annualClosingBalance;
+	}
 }

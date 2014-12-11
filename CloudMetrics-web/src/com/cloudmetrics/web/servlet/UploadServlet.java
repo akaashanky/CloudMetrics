@@ -57,82 +57,14 @@ public class UploadServlet extends HttpServlet {
 
 	@Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
-        
-        if (request.getParameter("getfile") != null && !request.getParameter("getfile").isEmpty()) {
-            File file = new File(EnvManager.getUploadedImageStorageLocation() + request.getParameter("getfile"));
-            if (file.exists()) {
-                int bytes = 0;
-                ServletOutputStream op = response.getOutputStream();
-
-                response.setContentType(CollectionOfUtilityMethods.getMimeType(file));
-                response.setContentLength((int) file.length());
-                response.setHeader( "Content-Disposition", "inline; filename=\"" + file.getName() + "\"" );
-
-                byte[] bbuf = new byte[1024];
-                DataInputStream in = new DataInputStream(new FileInputStream(file));
-
-                while ((in != null) && ((bytes = in.read(bbuf)) != -1)) {
-                    op.write(bbuf, 0, bytes);
-                }
-
-                in.close();
-                op.flush();
-                op.close();
-            }
-        } else if (request.getParameter("delfile") != null && !request.getParameter("delfile").isEmpty()) {
-            File file = new File(EnvManager.getUploadedImageStorageLocation() + request.getParameter("delfile"));
-            if (file.exists()) {
-                file.delete(); // TODO:check and report success
-            } 
-        } else if (request.getParameter("getthumb") != null && !request.getParameter("getthumb").isEmpty()) {
-            File file = new File(EnvManager.getUploadedImageStorageLocation() + request.getParameter("getthumb"));
-                if (file.exists()) {
-                    System.out.println(file.getAbsolutePath());
-                    String mimetype = CollectionOfUtilityMethods.getMimeType(file);
-                    if (mimetype.endsWith("png") || mimetype.endsWith("jpeg")|| mimetype.endsWith("jpg") || mimetype.endsWith("gif")) {
-                        BufferedImage im = ImageIO.read(file);
-                        if (im != null) {
-                            BufferedImage thumb = Scalr.resize(im, 75); 
-                            ByteArrayOutputStream os = new ByteArrayOutputStream();
-                            if (mimetype.endsWith("png")) {
-                                ImageIO.write(thumb, "PNG" , os);
-                                response.setContentType("image/png");
-                            } else if (mimetype.endsWith("jpeg")) {
-                                ImageIO.write(thumb, "jpg" , os);
-                                response.setContentType("image/jpeg");
-                            } else if (mimetype.endsWith("jpg")) {
-                                ImageIO.write(thumb, "jpg" , os);
-                                response.setContentType("image/jpeg");
-                            } else {
-                                ImageIO.write(thumb, "GIF" , os);
-                                response.setContentType("image/gif");
-                            }
-                            ServletOutputStream srvos = response.getOutputStream();
-                            response.setContentLength(os.size());
-                            response.setHeader( "Content-Disposition", "inline; filename=\"" + file.getName() + "\"" );
-                            os.writeTo(srvos);
-                            srvos.flush();
-                            srvos.close();
-                        }
-                    }
-            } // TODO: check and report success
-        } else {
             PrintWriter writer = response.getWriter();
             writer.write("call POST with multipart form data");
-        }
     }
     
     
     @SuppressWarnings("unchecked")
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
-    	//Is session valid?
-    	if(!CollectionOfUtilityMethods.isReqInSession(request)){
-       		throw new IllegalArgumentException(MessageCollection.NEED_TO_LOGIN_TO_ACCESS_THIS_FEATURE);
-    	}
-    	HttpSession session = request.getSession();
-    	Integer companyId = (Integer)session.getAttribute("companyId");
-    	
     	if (!ServletFileUpload.isMultipartContent(request)) {
             throw new IllegalArgumentException("Request is not multipart, please 'multipart/form-data' enctype for your form.");
         }
@@ -145,25 +77,16 @@ public class UploadServlet extends HttpServlet {
             List<FileItem> items = uploadHandler.parseRequest(request);
             for (FileItem item : items) {
                 if (!item.isFormField()) {
-                	    String imageStorageLocation = EnvManager.getUploadedImageStorageLocation();
-                	    File storageDir = new File(imageStorageLocation);
+                	    String finDataStorageLocation = EnvManager.getFinancialDataStorageLocation();
+                	    File storageDir = new File(finDataStorageLocation);
                 	    //If storage dir does not exist, create it.
                 	    if(!storageDir.exists()){
                 	    	storageDir.mkdir();
                 	    }
-                        File file = new File(imageStorageLocation, item.getName());
+                        File file = new File(finDataStorageLocation, item.getName());
                         item.write(file);
                         //save it to the DB
-                        //TODO:REMOVE editCompanyService.saveCompanyPhoto(companyId, "../imgupload?getfile=" + item.getName());
-                        JSONObject jsono = new JSONObject();
-                        jsono.put("name", item.getName());
-                        jsono.put("size", item.getSize());
-                        jsono.put("url", "../imgupload?getfile=" + item.getName());
-                        jsono.put("thumbnail_url", "../imgupload?getthumb=" + item.getName());
-                        jsono.put("delete_url", "../imgupload?delfile=" + item.getName());
-                        jsono.put("delete_type", "GET");
-                        json.put(jsono);
-                        System.out.println(json.toString());
+                        //TODO:REMOVE editCompanyService.saveCompanyPhoto(companyId, "../imgupload?getfile=" + item.getName());                        
                 }
             }
         } catch (FileUploadException e) {

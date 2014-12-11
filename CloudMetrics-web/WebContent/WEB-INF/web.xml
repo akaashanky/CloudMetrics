@@ -24,12 +24,12 @@
     <url-pattern>/api/*</url-pattern>
   </servlet-mapping>
   <servlet>
-    <servlet-name>ImageUploadServlet</servlet-name>
+    <servlet-name>DataSyncServlet</servlet-name>
     <servlet-class>com.cloudmetrics.web.servlet.UploadServlet</servlet-class>
   </servlet>
   <servlet-mapping>
-    <servlet-name>ImageUploadServlet</servlet-name>
-    <url-pattern>/imgupload</url-pattern>
+    <servlet-name>DataSyncServlet</servlet-name>
+    <url-pattern>/datasync</url-pattern>
   </servlet-mapping>
   <servlet>
     <servlet-name>LoginServlet</servlet-name>

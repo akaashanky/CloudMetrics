@@ -23,7 +23,7 @@ public class FinancialDataPopulationService {
 			return;
 		List<Calendar> usedMonths = companyFinancialData.getUsedMonths();
 		usedMonths.clear(); //Clean the list as we are going to repopulate
-		Map<String, List<String>> groupOrLedgerNameToClosingBalanceMap = new HashMap<String, List<String>>();
+		Map<String, List<Double>> groupOrLedgerNameToClosingBalanceMap = new HashMap<String, List<Double>>();
 		try{
 			br = new BufferedReader(new FileReader(financialCsvDataFile));
 			boolean isFirstLine = true;
@@ -37,9 +37,19 @@ public class FinancialDataPopulationService {
 			    	isFirstLine = false;
 			    }else{
 			    	String groupOrLedgerName = getLedgerOrGroupFromCsvCell(cells[0]);
-			    	List<String> closingBalanceList = new ArrayList<>();
+			    	List<Double> closingBalanceList = new ArrayList<>();
 			    	for(int i = 1; i < cells.length - 1; i++){
-			    		closingBalanceList.add(cells[i]);
+			    		if("".equals(cells[i].trim())){
+			    			closingBalanceList.add(0.0);
+			    		}else{
+			    			Double value = 0.0;
+			    			try{
+			    				value = Double.parseDouble(cells[i]);
+			    			}catch(NumberFormatException nfe){
+			    				nfe.printStackTrace();
+			    			}
+			    			closingBalanceList.add(value);
+			    		}
 			    	}
 			    	groupOrLedgerNameToClosingBalanceMap.put(groupOrLedgerName, closingBalanceList);
 			    }	

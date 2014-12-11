@@ -2,132 +2,189 @@ package com.cloudmetrics.businesslogic.financial.kpi;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
-public class Profitability{
-	String revenue;
-	double momRevenueGrowth;
-	String grossProfit;
-	double momGrossProfitGrowth;
-	String netProfit;
-	double momNetProfitGrowtth;
-	String profitMargin;
-	String financialYear;
+import com.cloudmetrics.businesslogic.financial.BaseFinancialInfo;
+import com.cloudmetrics.businesslogic.tally.CompanyFinancialData;
+import com.cloudmetrics.businesslogic.tally.GenericGroupOrLedger;
+import com.cloudmetrics.businesslogic.tally.Group;
+
+public class Profitability extends BaseFinancialInfo{
+	Double revenue;
+	Double momRevenueGrowth;
+	List<Double> monthlyRevenueList = new ArrayList<Double>();
 	
-	List<String> monthlyRevenue = new ArrayList<String>();
-	List<String> monthlyGrossProfit = new ArrayList<String>();
-	List<String> monthlyNetProfit = new ArrayList<String>();
-	List<String> monthlyProfitMargin = new ArrayList<String>();
+	Double grossProfit;
+	Double momGrossProfitGrowth;
+	List<Double> monthlyGrossProfitList = new ArrayList<Double>();
 	
-	public Profitability(boolean test){
-		revenue = "20,345,677";
-		momRevenueGrowth = 7.9;
-		grossProfit = "9,980,879";
-		momGrossProfitGrowth = 6.7;
-		netProfit = "3,987,234";
-		momNetProfitGrowtth = -3.4;
-		profitMargin = "13.23%";
-		financialYear = "FY 2013-14";
+	Double netProfit;
+	Double momNetProfitGrowtth;
+	List<Double> monthlyNetProfitList = new ArrayList<Double>();
+	
+	Double profitMargin;
+	
+	/**
+	 * Revenue = 
+	 * @param financialData
+	 */
+	public Profitability(CompanyFinancialData financialData){
+		//Get Direct income node, Direct expense, Indirect income & indirect expense.
+		Map<GenericGroupOrLedger, List<GenericGroupOrLedger>> twoLevelGroupAndLedgerMap = financialData.getTwoLevelGroupAndLedgerMap();
+		Double grossRevenue = 0.0;
+		Double grossExpense = 0.0;
+		Double nonGrossRevenue = 0.0;
+		Double nonGrossExpense = 0.0;
 		
-		monthlyRevenue.add("3,456,523");
-		monthlyRevenue.add("2,873,000");
-		monthlyRevenue.add("1,456,523");
-		monthlyRevenue.add("3,956,523");
-		monthlyRevenue.add("3,423,456");
+		List<Double> monthlyGrossRevenue = new ArrayList<Double>();
+		List<Double> monthlyGrossExpense = new ArrayList<Double>();
+		List<Double> monthlyNonGrossRevenue = new ArrayList<Double>();
+		List<Double> monthlyNonGrossExpense = new ArrayList<Double>();
+				
+		//Get a suspect list for 2 sides. 1. Revenue 2. Expense
+		for (GenericGroupOrLedger primaryGroupOrLedger : twoLevelGroupAndLedgerMap.keySet()) {
+			//The top most is the closing balance for this year.
+			Double thisYearClosingBalance = primaryGroupOrLedger.getAnnualClosingBalance();
+			List<Double> monthlyClosingBalance = primaryGroupOrLedger.getMonthlyClosingBalance();
+			if(primaryGroupOrLedger instanceof Group){
+				Group group = (Group)primaryGroupOrLedger;
+				if(group.isRevenue()){ //Remember the negativity or positivity when deciding on "add" or "subtract"
+					if(group.isAffectsGrossProfit()){
+						if(!group.isDeemedPositive()){
+							grossRevenue += thisYearClosingBalance;
+							addOneAmountListToAnother(monthlyGrossRevenue, monthlyClosingBalance);
+						}else{
+							grossExpense += thisYearClosingBalance;
+							addOneAmountListToAnother(monthlyGrossExpense, monthlyClosingBalance);
+						}
+					}else{
+						if(!group.isDeemedPositive()){
+							nonGrossRevenue += thisYearClosingBalance;
+							addOneAmountListToAnother(monthlyNonGrossRevenue, monthlyClosingBalance);
+						}else{
+							nonGrossExpense += thisYearClosingBalance;
+							addOneAmountListToAnother(monthlyNonGrossExpense, monthlyClosingBalance);
+						}
+					}
+				}
+			}
+		}
+		//now calculate the actual stuff!
+		this.revenue = grossRevenue;
+		this.monthlyRevenueList = monthlyGrossRevenue;
+		this.momRevenueGrowth = getLastPeriodGrowthNumber(this.monthlyRevenueList);
+		
+		this.grossProfit = grossRevenue + grossExpense; //"Plus" because the amount is already sign changed
+		this.monthlyGrossProfitList = addOneAmountListToAnother(monthlyGrossRevenue, monthlyGrossExpense);
+		this.momGrossProfitGrowth = getLastPeriodGrowthNumber(this.monthlyGrossProfitList);
+		
+		this.netProfit = grossProfit + nonGrossRevenue + nonGrossExpense;
+		//this.monthlyNetProfitList = addOneAmountListToAnother(monthlynet, target)
+		//TODO Add them
+	}
+	
+	public List<Double> addOneAmountListToAnother(List<Double> result, List<Double> target){
+		for(int i = 0; i < target.size(); i++){
+			result.set(i, result.get(i) + target.get(i));
+		}
+		return result;
+	}
+	
+	public List<Double> subtractOneAmountListFromAnother(List<Double> result, List<Double> target){
+		for(int i = 0; i < target.size(); i++){
+			result.set(i, result.get(i) - target.get(i));
+		}
+		return result;
+	}
+	
+	public Double getLastPeriodGrowthNumber(List<Double> listOfAmounts){
+		int noOfElements = listOfAmounts.size();
+		if(noOfElements <= 1){
+			return 0.0;
+		}else{
+			return listOfAmounts.get(noOfElements - 1) - listOfAmounts.get(noOfElements - 2);
+		}
 	}
 
-	public String getRevenue() {
+	public Double getRevenue() {
 		return revenue;
 	}
 
-	public void setRevenue(String revenue) {
+	public void setRevenue(Double revenue) {
 		this.revenue = revenue;
 	}
 
-	public String getGrossProfit() {
-		return grossProfit;
-	}
-
-	public void setGrossProfit(String grossProfit) {
-		this.grossProfit = grossProfit;
-	}
-
-	public String getNetProfit() {
-		return netProfit;
-	}
-
-	public void setNetProfit(String netProfit) {
-		this.netProfit = netProfit;
-	}
-
-	public String getProfitMargin() {
-		return profitMargin;
-	}
-
-	public void setProfitMargin(String profitMargin) {
-		this.profitMargin = profitMargin;
-	}
-
-	public List<String> getMonthlyRevenue() {
-		return monthlyRevenue;
-	}
-
-	public void setMonthlyRevenue(List<String> monthlyRevenue) {
-		this.monthlyRevenue = monthlyRevenue;
-	}
-
-	public List<String> getMonthlyGrossProfit() {
-		return monthlyGrossProfit;
-	}
-
-	public void setMonthlyGrossProfit(List<String> monthlyGrossProfit) {
-		this.monthlyGrossProfit = monthlyGrossProfit;
-	}
-
-	public List<String> getMonthlyNetProfit() {
-		return monthlyNetProfit;
-	}
-
-	public void setMonthlyNetProfit(List<String> monthlyNetProfit) {
-		this.monthlyNetProfit = monthlyNetProfit;
-	}
-
-	public List<String> getMonthlyProfitMargin() {
-		return monthlyProfitMargin;
-	}
-
-	public void setMonthlyProfitMargin(List<String> monthlyProfitMargin) {
-		this.monthlyProfitMargin = monthlyProfitMargin;
-	}
-
-	public double getMomRevenueGrowth() {
+	public Double getMomRevenueGrowth() {
 		return momRevenueGrowth;
 	}
 
-	public void setMomRevenueGrowth(double momRevenueGrowth) {
+	public void setMomRevenueGrowth(Double momRevenueGrowth) {
 		this.momRevenueGrowth = momRevenueGrowth;
 	}
 
-	public double getMomGrossProfitGrowth() {
+	public Double getGrossProfit() {
+		return grossProfit;
+	}
+
+	public void setGrossProfit(Double grossProfit) {
+		this.grossProfit = grossProfit;
+	}
+
+	public Double getMomGrossProfitGrowth() {
 		return momGrossProfitGrowth;
 	}
 
-	public void setMomGrossProfitGrowth(double momGrossProfitGrowth) {
+	public void setMomGrossProfitGrowth(Double momGrossProfitGrowth) {
 		this.momGrossProfitGrowth = momGrossProfitGrowth;
 	}
 
-	public double getMomNetProfitGrowtth() {
+	public Double getNetProfit() {
+		return netProfit;
+	}
+
+	public void setNetProfit(Double netProfit) {
+		this.netProfit = netProfit;
+	}
+
+	public Double getMomNetProfitGrowtth() {
 		return momNetProfitGrowtth;
 	}
 
-	public void setMomNetProfitGrowtth(double momNetProfitGrowtth) {
+	public void setMomNetProfitGrowtth(Double momNetProfitGrowtth) {
 		this.momNetProfitGrowtth = momNetProfitGrowtth;
 	}
 
-	public String getFinancialYear() {
-		return financialYear;
+	public Double getProfitMargin() {
+		return profitMargin;
 	}
 
-	public void setFinancialYear(String financialYear) {
-		this.financialYear = financialYear;
+	public void setProfitMargin(Double profitMargin) {
+		this.profitMargin = profitMargin;
 	}
+
+	public List<Double> getMonthlyRevenueList() {
+		return monthlyRevenueList;
+	}
+
+	public void setMonthlyRevenueList(List<Double> monthlyRevenueList) {
+		this.monthlyRevenueList = monthlyRevenueList;
+	}
+
+	public List<Double> getMonthlyGrossProfitList() {
+		return monthlyGrossProfitList;
+	}
+
+	public void setMonthlyGrossProfitList(List<Double> monthlyGrossProfitList) {
+		this.monthlyGrossProfitList = monthlyGrossProfitList;
+	}
+
+	public List<Double> getMonthlyNetProfitList() {
+		return monthlyNetProfitList;
+	}
+
+	public void setMonthlyNetProfitList(List<Double> monthlyNetProfitList) {
+		this.monthlyNetProfitList = monthlyNetProfitList;
+	}
+	
+
 }

@@ -9,6 +9,6 @@ public class ApplicationConstants {
 	
 	public static final String CONFIG_FILE_NAME = "app.properties";
 	
-	public static final String UPLOADED_IMAGE_LOCATION_DEV = "uploaded.image.location.dev";
-	public static final String UPLOADED_IMAGE_LOCATION_PROD = "uploaded.image.location.prod";
+	public static final String UPLOADED_FINDATA_LOCATION_DEV = "uploaded.findata.location.dev";
+	public static final String UPLOADED_FINDATA_LOCATION_PROD = "uploaded.findata.location.prod";
 }
