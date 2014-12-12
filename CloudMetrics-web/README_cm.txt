@@ -9,6 +9,8 @@ AWS instance
 scp -i ~/Dropbox/amazonkey/cloudmetrics.pem D:/work/shippable/CloudMetrics/CloudMetrics-web.war ubuntu@54.149.129.163:~/.
 ssh -i ~/Dropbox/amazonkey/cloudmetrics.pem 54.149.129.163 -l ubuntu
 
+sudo chmod 777 /var/cm_data/ -R
+
 Installing mysql and tomcat7
 sudo apt-get install mysql-server tomcat7
 

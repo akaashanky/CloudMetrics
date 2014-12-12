@@ -344,7 +344,8 @@ void CTallyExporterDlg::OnBnClickedSyncmasteranddata()
 	CloseZip(hz);
 
 	//TODO: Need to configure
-	uploadZipFile("localhost", "/CM/datasync",8080);
+	//uploadZipFile("localhost", "/CM/datasync",8080);
+	uploadZipFile("cloudmetric.in", "/datasync",80);
 	AfxMessageBox("Sync successful");
 }
 
