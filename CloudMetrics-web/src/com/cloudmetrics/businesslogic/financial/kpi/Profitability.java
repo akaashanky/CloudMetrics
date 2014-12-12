@@ -8,6 +8,7 @@ import com.cloudmetrics.businesslogic.financial.BaseFinancialInfo;
 import com.cloudmetrics.businesslogic.tally.CompanyFinancialData;
 import com.cloudmetrics.businesslogic.tally.GenericGroupOrLedger;
 import com.cloudmetrics.businesslogic.tally.Group;
+import com.cloudmetrics.domain.Company;
 
 public class Profitability extends BaseFinancialInfo{
 	Double revenue;
@@ -19,16 +20,17 @@ public class Profitability extends BaseFinancialInfo{
 	List<Double> monthlyGrossProfitList = new ArrayList<Double>();
 	
 	Double netProfit;
-	Double momNetProfitGrowtth;
+	Double momNetProfitGrowth;
 	List<Double> monthlyNetProfitList = new ArrayList<Double>();
 	
-	Double profitMargin;
+	Double netProfitMargin;
 	
 	/**
 	 * Revenue = 
 	 * @param financialData
 	 */
-	public Profitability(CompanyFinancialData financialData){
+	public Profitability(Company company,CompanyFinancialData financialData){
+		super(company);
 		//Get Direct income node, Direct expense, Indirect income & indirect expense.
 		Map<GenericGroupOrLedger, List<GenericGroupOrLedger>> twoLevelGroupAndLedgerMap = financialData.getTwoLevelGroupAndLedgerMap();
 		Double grossRevenue = 0.0;
@@ -75,26 +77,37 @@ public class Profitability extends BaseFinancialInfo{
 		this.revenue = grossRevenue;
 		this.monthlyRevenueList = monthlyGrossRevenue;
 		this.momRevenueGrowth = getLastPeriodGrowthNumber(this.monthlyRevenueList);
+		this.momRevenueGrowth = (double)Math.round(this.momRevenueGrowth * 100) / 100;
 		
 		this.grossProfit = grossRevenue + grossExpense; //"Plus" because the amount is already sign changed
-		this.monthlyGrossProfitList = addOneAmountListToAnother(monthlyGrossRevenue, monthlyGrossExpense);
+		addOneAmountListToAnother(this.monthlyGrossProfitList, monthlyGrossRevenue);
+		addOneAmountListToAnother(this.monthlyGrossProfitList, monthlyGrossExpense);
 		this.momGrossProfitGrowth = getLastPeriodGrowthNumber(this.monthlyGrossProfitList);
+		this.momGrossProfitGrowth = (double)Math.round(this.momGrossProfitGrowth * 100) / 100;
 		
 		this.netProfit = grossProfit + nonGrossRevenue + nonGrossExpense;
-		//this.monthlyNetProfitList = addOneAmountListToAnother(monthlynet, target)
-		//TODO Add them
+		addOneAmountListToAnother(this.monthlyNetProfitList, this.monthlyGrossProfitList);
+		addOneAmountListToAnother(this.monthlyNetProfitList, monthlyNonGrossRevenue);
+		addOneAmountListToAnother(this.monthlyNetProfitList, monthlyNonGrossExpense);
+		this.momNetProfitGrowth = getLastPeriodGrowthNumber(this.monthlyNetProfitList);
+		this.momNetProfitGrowth = (double)Math.round(this.momNetProfitGrowth * 100) / 100;
+		
+		this.netProfitMargin = this.netProfit/this.revenue * 100;
+		this.netProfitMargin = (double)Math.round(this.netProfitMargin * 100) / 100;
+		super.setFinancialYear("FY 13-14");
 	}
 	
 	public List<Double> addOneAmountListToAnother(List<Double> result, List<Double> target){
 		boolean isThisACopyTask = false; //If result and target are not of same size, simply copy target data to result
 		if(result.size() != target.size()){
 			isThisACopyTask = true;
+			result.clear();
 		}
 		for(int i = 0; i < target.size() - 1; i++){
 			if(isThisACopyTask == false){
 				result.set(i, result.get(i) + target.get(i));	
 			}else{
-				result.set(i, target.get(i));
+				result.add(target.get(i));
 			}
 		}
 		return result;
@@ -104,12 +117,13 @@ public class Profitability extends BaseFinancialInfo{
 		boolean isThisACopyTask = false; //If result and target are not of same size, simply copy target data to result
 		if(result.size() != target.size()){
 			isThisACopyTask = true;
+			result.clear();
 		}
 		for(int i = 0; i < target.size() - 1; i++){
 			if(isThisACopyTask == false){
 				result.set(i, result.get(i) - target.get(i));	
 			}else{
-				result.set(i, target.get(i) * -1.0 );
+				result.add(target.get(i) * -1.0 );
 			}
 		}
 		return result;
@@ -120,7 +134,7 @@ public class Profitability extends BaseFinancialInfo{
 		if(noOfElements <= 1){
 			return 0.0;
 		}else{
-			return listOfAmounts.get(noOfElements - 1) - listOfAmounts.get(noOfElements - 2);
+			return (listOfAmounts.get(noOfElements - 1) - listOfAmounts.get(noOfElements - 2))/listOfAmounts.get(noOfElements - 1);
 		}
 	}
 
@@ -164,20 +178,20 @@ public class Profitability extends BaseFinancialInfo{
 		this.netProfit = netProfit;
 	}
 
-	public Double getMomNetProfitGrowtth() {
-		return momNetProfitGrowtth;
+	public Double getMomNetProfitGrowth() {
+		return momNetProfitGrowth;
 	}
 
-	public void setMomNetProfitGrowtth(Double momNetProfitGrowtth) {
-		this.momNetProfitGrowtth = momNetProfitGrowtth;
+	public void setMomNetProfitGrowtth(Double momNetProfitGrowth) {
+		this.momNetProfitGrowth = momNetProfitGrowth;
 	}
 
-	public Double getProfitMargin() {
-		return profitMargin;
+	public Double getNetProfitMargin() {
+		return netProfitMargin;
 	}
 
-	public void setProfitMargin(Double profitMargin) {
-		this.profitMargin = profitMargin;
+	public void setNetProfitMargin(Double profitMargin) {
+		this.netProfitMargin = profitMargin;
 	}
 
 	public List<Double> getMonthlyRevenueList() {

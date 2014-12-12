@@ -1,1 +1,1 @@
-sudo cp CloudMetrics.war /var/lib/tomcat7/webapps/ROOT.war
+sudo cp CloudMetrics-web.war /var/lib/tomcat7/webapps/ROOT.war

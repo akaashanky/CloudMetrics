@@ -18,6 +18,7 @@ Release/
 ipch/
 *.opensdf
 *.sdf
+*.suo
 
 # Eclipse #
 ###########

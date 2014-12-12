@@ -34,7 +34,8 @@ public class KPIService {
 			FinancialDataPopulationService.populateMonthlyData(financialData, financialDataStorageLocation + File.separator + companyId + "_findatamonthly.csv");
 			FinancialDataPopulationService.populateAnnualData(financialData, financialDataStorageLocation + File.separator + companyId + "_findatayearly.csv");
 					
-			appResponse.setData(new Profitability(financialData));
+			editCompanyService.setCleanOrDirtyState(companyId, false);
+			appResponse.setData(new Profitability(editCompanyService.getCompanyById(companyId).getData(), financialData));
 			appResponse.setCode(EventStatus.success.getValue());
 		}else{
 			appResponse.setData(profitabilityObjInSession);

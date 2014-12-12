@@ -21,8 +21,7 @@
     	http://www.springframework.org/schema/jee
     	http://www.springframework.org/schema/jee/spring-jee-3.0.xsd">      
       <!--Enables automatic mapping of objects to and from JSON -->  
-      <mvc:annotation-driven/>  
-      
+       	
       <!--  
             Setup spring to pull in @Controller, @RequestMapping, etc Configuration scans specified packages  
             for classes configured as Spring managed beans and automatically sets up objects annotated with  

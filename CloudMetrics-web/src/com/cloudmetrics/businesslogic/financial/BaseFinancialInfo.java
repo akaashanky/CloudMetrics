@@ -1,14 +1,19 @@
 package com.cloudmetrics.businesslogic.financial;
 
+import com.cloudmetrics.domain.Company;
+
 public class BaseFinancialInfo {
-	String companyName;
+	Company company;
 	String financialYear;
 	
-	public String getCompanyName() {
-		return companyName;
+	public BaseFinancialInfo(Company company) {
+		this.company = company;
 	}
-	public void setCompanyName(String companyName) {
-		this.companyName = companyName;
+	public Company getCompany() {
+		return company;
+	}
+	public void setCompany(Company company) {
+		this.company = company;
 	}
 	public String getFinancialYear() {
 		return financialYear;
