@@ -9,6 +9,7 @@
 #include <set>
 #include <sstream>
 #include "afxwin.h"
+#include <fstream>
 using namespace std;
 
 #pragma once
@@ -47,10 +48,11 @@ private:
 	void WriteCSVDataToFile(string& csvFileContent, string& fileName);
 	void GetYearlyTBXMLForACompany(std::string& tbXMLStringForACompany);
 	void GetMasterXMLForACompany(std::string& masterXMLStringRequestForACompany);	
-	void uploadZipFile(CString strServerUrl,CString strServerUploadFile, int port=80);
+	boolean uploadZipFile(CString strServerUrl,CString strServerUploadFile, int port=80);
 	CString CTallyExporterDlg::MakePostFileData(CString& strBoundary);
 	CString CTallyExporterDlg::MakePreFileData(CString& strBoundary, CString& strFileName);
 	CString CTallyExporterDlg::MakeRequestHeaders(CString& strBoundary);
+	void CTallyExporterDlg::WriteToLog(string LogContent, boolean writeStatusToDialog=true);
 
 public:
 	
@@ -60,7 +62,7 @@ public:
 	afx_msg void OnBnClickedGenerate();
 
 private:
-	CStdioFile m_logFile;
+	ofstream m_logFile;
 	string m_companyListXMLRequest;
 	std::string m_trialBalanceXMLRequest;	
 	string m_trialBalanceYearlyXMLRequest;
@@ -77,4 +79,5 @@ private:
 public:
 	afx_msg void OnBnClickedSyncmasteranddata();
 	afx_msg void OnBnClickedSyncdata();
+	afx_msg void OnBnClickedCancel();
 };

@@ -108,7 +108,10 @@ public class UploadServlet extends HttpServlet {
                     item.write(zipFile);    
                     //Now unzip it
                     UnZip.unZipSyncData(zipFile.getAbsolutePath(), finDataStorageLocation, company.getCompanyId());
+                    editCompanyService.changeCompanyName(company.getCompanyId(), companyName);
                     editCompanyService.setCleanOrDirtyState(company.getCompanyId(), true);
+                    //send email to user.
+                    
                 }
           } 
         } catch (FileUploadException e) {

@@ -1,14 +1,12 @@
 package com.cloudmetrics.service.financial;
 
-import java.io.File;
-
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.cloudmetrics.businesslogic.financial.kpi.Liquidity;
 import com.cloudmetrics.businesslogic.financial.kpi.Profitability;
 import com.cloudmetrics.businesslogic.tally.CompanyFinancialData;
 import com.cloudmetrics.service.businesslogic.finance.FinancialDataPopulationService;
-import com.cloudmetrics.service.businesslogic.finance.XMLToModelObjectConverter;
 import com.cloudmetrics.service.company.EditCompanyService;
 import com.cloudmetrics.util.EnumCollection.EventStatus;
 import com.cloudmetrics.util.EnvManager;
@@ -26,14 +24,8 @@ public class KPIService {
 		if(profitabilityObjInSession == null || editCompanyService.isStateDirty(companyId).getData()){		
 			CompanyFinancialData financialData = new CompanyFinancialData();
 			String financialDataStorageLocation = EnvManager.getFinancialDataStorageLocation();
-			try {
-				XMLToModelObjectConverter.construct(financialData, financialDataStorageLocation + File.separator + companyId + "_master.xml");
-			} catch (Exception e) {
-				e.printStackTrace();
-			}
-			FinancialDataPopulationService.populateMonthlyData(financialData, financialDataStorageLocation + File.separator + companyId + "_findatamonthly.csv");
-			FinancialDataPopulationService.populateAnnualData(financialData, financialDataStorageLocation + File.separator + companyId + "_findatayearly.csv");
-					
+			FinancialDataPopulationService.parseMasterAndPopulateDataForTheCompany(companyId, financialData, financialDataStorageLocation);
+			
 			editCompanyService.setCleanOrDirtyState(companyId, false);
 			appResponse.setData(new Profitability(editCompanyService.getCompanyById(companyId).getData(), financialData));
 			appResponse.setCode(EventStatus.success.getValue());
@@ -44,4 +36,33 @@ public class KPIService {
 		
 		return appResponse; 
 	}
+	
+	/**
+	 * 
+	 * @param companyId
+	 * @param liquidityObjInSession
+	 * @return
+	 */
+	//TODO: Store the companyFinancialData in session and don't recalculate for each metric.
+	@Transactional
+	public AppResponse<Liquidity> getLiquidityKPIs(Integer companyId, Liquidity liquidityObjInSession){
+		AppResponse<Liquidity> appResponse = new AppResponse<>();
+		
+		//check whether profitability exists in the session and the fin data in the DB is not dirty
+		if(liquidityObjInSession == null || editCompanyService.isStateDirty(companyId).getData()){		
+			CompanyFinancialData financialData = new CompanyFinancialData();
+			String financialDataStorageLocation = EnvManager.getFinancialDataStorageLocation();
+			FinancialDataPopulationService.parseMasterAndPopulateDataForTheCompany(companyId, financialData, financialDataStorageLocation);
+			
+			editCompanyService.setCleanOrDirtyState(companyId, false);
+			appResponse.setData(new Liquidity(editCompanyService.getCompanyById(companyId).getData(), financialData));
+			appResponse.setCode(EventStatus.success.getValue());
+		}else{
+			appResponse.setData(liquidityObjInSession);
+			appResponse.setCode(EventStatus.success.getValue());
+		}
+		
+		return appResponse; 
+	}
+
 }

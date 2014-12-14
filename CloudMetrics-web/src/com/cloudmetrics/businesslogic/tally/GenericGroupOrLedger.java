@@ -11,6 +11,11 @@ public class GenericGroupOrLedger {
 	List<Double> quarterlyClosingBalance;
 	Double annualClosingBalance;
 	
+	public GenericGroupOrLedger(){}
+	public GenericGroupOrLedger(String name){
+		this.name = name;
+	}
+	
 	@Override
 	public String toString() {
 		return name;

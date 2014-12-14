@@ -1,6 +1,7 @@
 package com.cloudmetrics.service.businesslogic.finance;
 
 import java.io.BufferedReader;
+import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
@@ -16,8 +17,23 @@ import com.cloudmetrics.businesslogic.tally.CompanyFinancialData;
 import com.cloudmetrics.businesslogic.tally.GenericGroupOrLedger;
 
 public class FinancialDataPopulationService {
-	private static final int noOfLinesToSkip = 3; 
-	public static void populateMonthlyData(CompanyFinancialData companyFinancialData, String financialCsvDataFile){
+	
+	public static void parseMasterAndPopulateDataForTheCompany(Integer companyId, CompanyFinancialData companyFinancialData, String financialDataStorageLocation){
+		try {
+			XMLToModelObjectConverter.construct(companyFinancialData, financialDataStorageLocation + File.separator + companyId + "_master.xml");
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		FinancialDataPopulationService.populateMonthlyData(companyFinancialData, financialDataStorageLocation + File.separator + companyId + "_findatamonthly.csv");
+		FinancialDataPopulationService.populateAnnualData(companyFinancialData, financialDataStorageLocation + File.separator + companyId + "_findatayearly.csv");
+
+	}
+	/**
+	 * 
+	 * @param companyFinancialData
+	 * @param financialCsvDataFile
+	 */
+	protected static void populateMonthlyData(CompanyFinancialData companyFinancialData, String financialCsvDataFile){
 		BufferedReader br = null;
 		String line = "";
 		if(companyFinancialData == null)
@@ -97,7 +113,12 @@ public class FinancialDataPopulationService {
 		}
 	}
 	
-	public static void populateAnnualData(CompanyFinancialData companyFinancialData, String financialCsvDataFile){
+	/**
+	 * 
+	 * @param companyFinancialData
+	 * @param financialCsvDataFile
+	 */
+	protected static void populateAnnualData(CompanyFinancialData companyFinancialData, String financialCsvDataFile){
 
 		BufferedReader br = null;
 		String line = "";

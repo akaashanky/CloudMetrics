@@ -21,6 +21,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.context.support.SpringBeanAutowiringSupport;
 
 import com.cloudmetrics.service.company.EditCompanyService;
+import com.cloudmetrics.util.ApplicationConstants;
 import com.cloudmetrics.util.EnumCollection.EventStatus;
 import com.cloudmetrics.web.AppResponse;
 
@@ -71,8 +72,8 @@ public class LoginServlet extends HttpServlet {
 	        
 	    	response.setContentType("application/json");
 
-			session.setAttribute("email", email);
-			session.setAttribute("companyId", svcResponse.getData());
+			session.setAttribute(ApplicationConstants.EMAIL, email);
+			session.setAttribute(ApplicationConstants.COMPANY_ID, svcResponse.getData());
 			JSONObject json = new JSONObject();
             try {
 				json.put("id", svcResponse.getData());

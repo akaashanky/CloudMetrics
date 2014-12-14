@@ -2,3 +2,27 @@
   background-color: #0F9B07;
   font-size:12;
 }
+
+.label-danger{
+  font-size:12;
+}
+
+.form-control{
+	border-radius: 0px;
+}
+
+body{
+  -webkit-font-smoothing: antialiased;
+	background-image: url('../img/crossword-theme.png');
+	background-repeat: repeat;	
+}
+
+.btn-default{
+	border-radius: 0px;
+}
+
+.btn-login{
+   background-color: #43C9CB;
+   color: #fff;
+   font-weight: bold;	
+}

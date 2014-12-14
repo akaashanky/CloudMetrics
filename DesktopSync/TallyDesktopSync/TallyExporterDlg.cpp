@@ -42,7 +42,7 @@ BEGIN_MESSAGE_MAP(CTallyExporterDlg, CDialogEx)
 	ON_WM_PAINT()
 	ON_WM_QUERYDRAGICON()
 	ON_BN_CLICKED(ID_SYNCMASTERANDDATA, &CTallyExporterDlg::OnBnClickedSyncmasteranddata)
-	ON_BN_CLICKED(ID_SYNCDATA, &CTallyExporterDlg::OnBnClickedSyncdata)
+	ON_BN_CLICKED(IDCANCEL, &CTallyExporterDlg::OnBnClickedCancel)
 END_MESSAGE_MAP()
 
 
@@ -58,6 +58,11 @@ BOOL CTallyExporterDlg::OnInitDialog()
 	SetIcon(m_hIcon, TRUE);			// Set big icon
 	SetIcon(m_hIcon, FALSE);		// Set small icon
 
+	string errorMsg = "";
+	//Initialize logging
+	m_logFile.open ("data\\generated\\log.txt");
+	WriteToLog("Logging initialised", false);
+
 	//Also read the XML request for company list from file.
 	string line1;
 	ifstream companyListXMLFile ("data\\companylist_request.xml");
@@ -69,7 +74,11 @@ BOOL CTallyExporterDlg::OnInitDialog()
 		}
 		companyListXMLFile.close();
 	}
-	else AfxMessageBox("Unable to open company list XML file"); 
+	else
+	{
+		errorMsg = "Unable to open company list XML file";
+		AfxMessageBox("Unable to open company list XML file"); 
+	}
 
     //Check whether we can connect to Tally over the local 9000 port
     CompanyListResponse companyListResponse;
@@ -83,6 +92,11 @@ BOOL CTallyExporterDlg::OnInitDialog()
 	}
 	GetCompanyListFromTallyServer(9000, companyListResponseRef);
 
+	if(companyListResponseRef.companyList.size() == 0)
+	{
+		errorMsg = "No company found. Make sure that at least one company is loaded in Tally";
+	   WriteToLog("No company found. Make sure that at least one company is loaded in Tally");
+	}
 	//for(std::vector<string>::iterator it = companyListResponseRef.companyList.begin(); it != companyListResponseRef.companyList.end(); ++it) {
 	for(int i = 0; i < companyListResponseRef.companyList.size(); i++)
 	{
@@ -101,7 +115,12 @@ BOOL CTallyExporterDlg::OnInitDialog()
 		}
 		tb.close();
 	}
-	else cout << AfxMessageBox("Unable to open tb.xml file");
+	else 
+	{
+		WriteToLog("Unable to open tb.xml file");
+		errorMsg = "Unable to open tb.xml file";
+	    AfxMessageBox("Unable to open tb.xml file");
+	}
 
 	//Also read the XML request from file.
 	string line2;
@@ -114,7 +133,12 @@ BOOL CTallyExporterDlg::OnInitDialog()
 		}
 		tb_yearly.close();
 	}
-	else cout << AfxMessageBox("Unable to open tb_yearly.xml file"); 
+	else
+	{
+		WriteToLog("Unable to open tb_yearly.xml file");
+		errorMsg = "Unable to open tb_yearly.xml file";
+		AfxMessageBox("Unable to open tb_yearly.xml file"); 
+	}
 	
 	//Read the export master file
 	string line3;
@@ -127,19 +151,29 @@ BOOL CTallyExporterDlg::OnInitDialog()
 		}
 		export_master.close();
 	}
-	else cout << AfxMessageBox("Unable to open export_master.xml file"); 
+	else  
+	{
+		WriteToLog("Unable to open export_master.xml file");
+		errorMsg = "Unable to open export_master.xml file";
+		AfxMessageBox("Unable to open export_master.xml file");
+	}
 
 	//create the generated dir inside data
 	if (!CreateDirectory("data\\generated",NULL)) {
 	  if (GetLastError() == ERROR_ALREADY_EXISTS) {
 		// directory already exists. Do nothing
 	  } else {
+		  WriteToLog("Could not create \"generated\" directory!");
+		  errorMsg = "Could not create \"generated\" directory!";
 		AfxMessageBox("Could not create \"generated\" directory!");
 		return false;
 	  }
 	}
 	
-	
+	if(errorMsg == "")
+	  WriteToLog("Ready..");
+	else
+		WriteToLog(errorMsg);
 	return TRUE;  // return TRUE  unless you set the focus to a control
 }
 
@@ -184,6 +218,7 @@ HCURSOR CTallyExporterDlg::OnQueryDragIcon()
  */
 BOOL CTallyExporterDlg::GetCompanyListFromTallyServer(int port, CompanyListResponse& companyListResponseRef)
 {
+   WriteToLog("Getting company list from Tally.");
    CInternetSession session(_T("My Session"));
    CHttpConnection* pServer = NULL;
    CHttpFile* pFile = NULL;
@@ -198,6 +233,7 @@ BOOL CTallyExporterDlg::GetCompanyListFromTallyServer(int port, CompanyListRespo
       pServer = session.GetHttpConnection(_T("localhost"),NULL, port, NULL, NULL);
       pFile = pServer->OpenRequest(CHttpConnection::HTTP_VERB_POST, _T(""), NULL,1,(LPCTSTR*)acceptedTypes,NULL,INTERNET_FLAG_EXISTING_CONNECT);
 
+	  WriteToLog("Sending request to Tally.");
 	  pFile->SendRequest(strHeaders, (LPVOID)(LPCTSTR)strParam, strParam.GetLength());
       pFile->QueryInfoStatusCode(dwRet);
 
@@ -212,6 +248,7 @@ BOOL CTallyExporterDlg::GetCompanyListFromTallyServer(int port, CompanyListRespo
       }
 	  else
 	  { 
+		  WriteToLog("Tally did not respond with data. Is Tally running?");
 		  //Do something as server is not sending response as expected.
 	  }
       delete pFile;
@@ -223,6 +260,7 @@ BOOL CTallyExporterDlg::GetCompanyListFromTallyServer(int port, CompanyListRespo
       TCHAR pszError[64];
       pEx->GetErrorMessage(pszError, 64);
       _tprintf_s(_T("%63s"), pszError);
+	  WriteToLog(pszError);
    }
    session.Close();
    return false;
@@ -241,6 +279,8 @@ void CTallyExporterDlg::GetCompanyListFromCSVResponse(CompanyListResponse& compa
 	if (found!=std::string::npos)
 	{//Found <RESPONSE>. So some error
 		//Check for any error
+		WriteToLog("Encountered some error. See the log file");
+		WriteToLog(response, false);
 		found = response.find("<LINEERROR>");
 		if(found != std::string::npos)
 		{
@@ -328,25 +368,33 @@ void CTallyExporterDlg::OnBnClickedSyncmasteranddata()
 	GetMasterXMLForACompany(masterDataXMLRequestForACompanyRef);
 	masterDataXMLRequestCSTRRef = masterDataXMLRequestForACompanyRef.c_str();
 
-	GetTallyTBResponse(trialBalanceMonthlyXMLRequestCSTRRef,finalCSVContentForMonthlyFileRef, atoi(m_strPort));
-	GetTallyTBResponse(trialBalanceYearlyXMLRequestCSTRRef,finalCSVContentForYearlyFileRef, atoi(m_strPort));
-	GetTallyTBResponse(masterDataXMLRequestCSTRRef, finalXMLContentForMasterFileRef, atoi(m_strPort));
+	WriteToLog("Getting Tally Data..");
+	if(!GetTallyTBResponse(trialBalanceMonthlyXMLRequestCSTRRef,finalCSVContentForMonthlyFileRef, atoi(m_strPort)))
+		return;
+	if(!GetTallyTBResponse(trialBalanceYearlyXMLRequestCSTRRef,finalCSVContentForYearlyFileRef, atoi(m_strPort)))
+		return;
+	if(!GetTallyTBResponse(masterDataXMLRequestCSTRRef, finalXMLContentForMasterFileRef, atoi(m_strPort)))
+		return;
 
+	WriteToLog("Writing data to files", false);
 	//Write everything to a file
 	WriteCSVDataToFile(finalCSVContentForMonthlyFileRef, m_monthlyCsvFileName);
 	WriteCSVDataToFile(finalCSVContentForYearlyFileRef, m_yearlyCsvFileName);
 	WriteCSVDataToFile(finalXMLContentForMasterFileRef, m_masterXMLFileName);
 
+	WriteToLog("Zipping all data..", false);
 	HZIP hz = CreateZip(("data\\generated\\" + m_zipFileFinData).c_str(),0);
 	ZipAdd(hz,m_monthlyCsvFileName.c_str(), ("data\\generated\\" + m_monthlyCsvFileName).c_str());
 	ZipAdd(hz,m_yearlyCsvFileName.c_str(), ("data\\generated\\" + m_yearlyCsvFileName).c_str());
 	ZipAdd(hz,m_masterXMLFileName.c_str(), ("data\\generated\\" + m_masterXMLFileName).c_str());
 	CloseZip(hz);
 
+	WriteToLog("Uploading data to your account..");
 	//TODO: Need to configure
 	//uploadZipFile("localhost", "/CM/datasync",8080);
-	uploadZipFile("cloudmetric.in", "/datasync",80);
-	AfxMessageBox("Sync successful");
+	if(!uploadZipFile("cloudmetric.in", "/datasync",80))
+		return;
+	WriteToLog("Done syncing..");
 }
 
 /* ===================================================================
@@ -366,6 +414,7 @@ BOOL CTallyExporterDlg::GetTallyTBResponse(CString& xmlTBRequestRef,string& csvC
 	  CString strHeaders  = _T("Content-Type: application/x-www-form-urlencoded;Accept-Encoding: gzip,deflate");
 	  CString acceptedTypes[] = {_T("text/html")};
 
+	  WriteToLog("Connecting to localhost at port" + port);
       pServer = session.GetHttpConnection(_T("localhost"),NULL, port, NULL, NULL);
       pFile = pServer->OpenRequest(CHttpConnection::HTTP_VERB_POST, _T(""), NULL,1,(LPCTSTR*)acceptedTypes,NULL,INTERNET_FLAG_EXISTING_CONNECT);
 
@@ -395,9 +444,12 @@ BOOL CTallyExporterDlg::GetTallyTBResponse(CString& xmlTBRequestRef,string& csvC
       TCHAR pszError[64];
       pEx->GetErrorMessage(pszError, 64);
       _tprintf_s(_T("%63s"), pszError);
+	  WriteToLog("Error encountered while connecting to Tally");
+	  WriteToLog(pszError, false);
+	  return false;
    }
    session.Close();
-   return false;
+   return true;
 }
 
 /* ===================================================================
@@ -446,7 +498,7 @@ void CTallyExporterDlg::OnBnClickedSyncdata()
 	// TODO: Add your control notification handler code here
 }
 
-void CTallyExporterDlg::uploadZipFile(CString strServerUrl,CString strServerUploadFile, int port)
+boolean CTallyExporterDlg::uploadZipFile(CString strServerUrl,CString strServerUploadFile, int port)
 {
 	DWORD dwTotalRequestLength;
 	DWORD dwChunkLength;
@@ -461,7 +513,7 @@ void CTallyExporterDlg::uploadZipFile(CString strServerUrl,CString strServerUplo
 	if (!file.Open(("data\\generated\\" + m_zipFileFinData).c_str(),
 	  CFile::modeRead | CFile::shareDenyWrite))
 	 {
-			return;
+			return false;
 	   }
 
 	CInternetSession session("sendFile");
@@ -470,7 +522,6 @@ void CTallyExporterDlg::uploadZipFile(CString strServerUrl,CString strServerUplo
 	try
 	{
 		//Create the multi-part form data that goes before and after the actual file upload.
-
 		CString strHTTPBoundary = _T("FFF3F395A90B452BB8BEDC878DDBD152");       
 		CString strPreFileData = MakePreFileData(strHTTPBoundary, file.GetFileName());
 		CString strPostFileData = MakePostFileData(strHTTPBoundary);
@@ -530,16 +581,24 @@ void CTallyExporterDlg::uploadZipFile(CString strServerUrl,CString strServerUplo
 	catch(CInternetException* e)
 	{
 		TRACE(L"error: %d \n",e->m_dwError);
+		WriteToLog("Error connecting to your account..");
+		WriteToLog(e->m_dwError + "", false);
+		return false;
 	}
 	catch(CFileException* e)
 	{
-		TRACE(L"error: %d \n",e->m_cause);
+		TRACE(L"error: %d \n",e->m_cause);		
+		WriteToLog("Error connecting to your account..");
+		WriteToLog(e->m_cause + "", false);
+		return false;
 	}
 	catch(...)
 	{
 		TRACE(L" unexpected error");
+		WriteToLog("Error connecting to your account..");
+		return false;
 	}
-
+	return true;
 }
 
 CString CTallyExporterDlg::MakeRequestHeaders(CString& strBoundary)
@@ -590,4 +649,27 @@ CString CTallyExporterDlg::MakePostFileData(CString& strBoundary)
 
 	return strData;
 
+}
+
+/* ===================================================================
+*         WriteCSVDataToFile
+*  ===================================================================
+*/
+void CTallyExporterDlg::WriteToLog(string LogContent, boolean writeStatusToDialog)
+{	
+	if(writeStatusToDialog)
+		SetDlgItemText(IDC_MESSAGE_STATIC, (LPCTSTR)LogContent.c_str());
+	 time_t rawtime;
+     struct tm * timeinfo;
+
+     time (&rawtime);
+     timeinfo = localtime (&rawtime);
+	 m_logFile<< asctime(timeinfo) + LogContent + "\n";
+}
+
+
+void CTallyExporterDlg::OnBnClickedCancel()
+{
+	m_logFile.close();
+	CDialogEx::OnCancel();
 }

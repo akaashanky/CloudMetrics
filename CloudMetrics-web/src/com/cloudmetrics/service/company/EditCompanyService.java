@@ -6,6 +6,7 @@ import com.cloudmetrics.common.CommonException;
 import com.cloudmetrics.common.MessageCollection;
 import com.cloudmetrics.dao.CompanyDao;
 import com.cloudmetrics.domain.Company;
+import com.cloudmetrics.util.ApplicationConstants;
 import com.cloudmetrics.util.EnumCollection.EventStatus;
 import com.cloudmetrics.web.AppResponse;
 
@@ -175,7 +176,7 @@ public class EditCompanyService {
 		}
 		//If the account is not created first create it.
 		if(company == null){
-			return createCompanyWithMinimumParams("", email, password);
+			appResponse.setDescription(ApplicationConstants.COMPANY_NOT_FOUND);
 		}else{		
 			company.setPassword(password);
 		
@@ -245,6 +246,36 @@ public class EditCompanyService {
 			company.setIsDirty("0");
 		}
 	
+		try {
+			companyDao.update(company);
+			appResponse.setCode(EventStatus.success.getValue());
+			appResponse.setData(company.getCompanyId());
+		} catch (CommonException e) {
+			e.printStackTrace();
+			appResponse.setDescription(MessageCollection.INTERNAL_ERROR);
+			return appResponse;
+		}			
+		return appResponse;
+	}
+	
+	/**
+	 * Set clean or dirty state for a company.
+	 * @param id
+	 * @param password
+	 * @return
+	 */
+	@Transactional
+	public AppResponse<Integer> changeCompanyName(Integer companyId, String companyName){
+		Company company = null;
+		AppResponse<Integer> appResponse = new AppResponse<Integer>();
+		appResponse.setCode(EventStatus.failure.getValue());
+		try {
+			company	= (Company)companyDao.readById(companyId);
+		} catch (CommonException e) {
+			e.printStackTrace();
+			return appResponse;
+		}	
+		company.setCompanyName(companyName);
 		try {
 			companyDao.update(company);
 			appResponse.setCode(EventStatus.success.getValue());

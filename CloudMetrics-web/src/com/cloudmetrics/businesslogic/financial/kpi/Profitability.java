@@ -1,10 +1,15 @@
 package com.cloudmetrics.businesslogic.financial.kpi;
 
+import java.text.DecimalFormat;
+import java.text.DecimalFormatSymbols;
+import java.text.NumberFormat;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 
 import com.cloudmetrics.businesslogic.financial.BaseFinancialInfo;
+import com.cloudmetrics.businesslogic.financial.FinancialUtils;
 import com.cloudmetrics.businesslogic.tally.CompanyFinancialData;
 import com.cloudmetrics.businesslogic.tally.GenericGroupOrLedger;
 import com.cloudmetrics.businesslogic.tally.Group;
@@ -12,14 +17,17 @@ import com.cloudmetrics.domain.Company;
 
 public class Profitability extends BaseFinancialInfo{
 	Double revenue;
+	String formattedRevenue;
 	Double momRevenueGrowth;
 	List<Double> monthlyRevenueList = new ArrayList<Double>();
 	
 	Double grossProfit;
+	String formattedGrossProfit;
 	Double momGrossProfitGrowth;
 	List<Double> monthlyGrossProfitList = new ArrayList<Double>();
 	
 	Double netProfit;
+	String formattedNetProfit;
 	Double momNetProfitGrowth;
 	List<Double> monthlyNetProfitList = new ArrayList<Double>();
 	
@@ -56,18 +64,18 @@ public class Profitability extends BaseFinancialInfo{
 					if(group.isAffectsGrossProfit()){
 						if(!group.isDeemedPositive()){
 							grossRevenue += thisYearClosingBalance;
-							addOneAmountListToAnother(monthlyGrossRevenue, monthlyClosingBalance);
+							FinancialUtils.addOneAmountListToAnother(monthlyGrossRevenue, monthlyClosingBalance);
 						}else{
 							grossExpense += thisYearClosingBalance;
-							addOneAmountListToAnother(monthlyGrossExpense, monthlyClosingBalance);
+							FinancialUtils.addOneAmountListToAnother(monthlyGrossExpense, monthlyClosingBalance);
 						}
 					}else{
 						if(!group.isDeemedPositive()){
 							nonGrossRevenue += thisYearClosingBalance;
-							addOneAmountListToAnother(monthlyNonGrossRevenue, monthlyClosingBalance);
+							FinancialUtils.addOneAmountListToAnother(monthlyNonGrossRevenue, monthlyClosingBalance);
 						}else{
 							nonGrossExpense += thisYearClosingBalance;
-							addOneAmountListToAnother(monthlyNonGrossExpense, monthlyClosingBalance);
+							FinancialUtils.addOneAmountListToAnother(monthlyNonGrossExpense, monthlyClosingBalance);
 						}
 					}
 				}
@@ -75,67 +83,34 @@ public class Profitability extends BaseFinancialInfo{
 		}
 		//now calculate the actual stuff!
 		this.revenue = grossRevenue;
+		this.revenue = (double)Math.round(this.revenue);//Round it
 		this.monthlyRevenueList = monthlyGrossRevenue;
-		this.momRevenueGrowth = getLastPeriodGrowthNumber(this.monthlyRevenueList);
+		this.momRevenueGrowth = FinancialUtils.getLastPeriodGrowthNumber(this.monthlyRevenueList);
 		this.momRevenueGrowth = (double)Math.round(this.momRevenueGrowth * 100) / 100;
 		
 		this.grossProfit = grossRevenue + grossExpense; //"Plus" because the amount is already sign changed
-		addOneAmountListToAnother(this.monthlyGrossProfitList, monthlyGrossRevenue);
-		addOneAmountListToAnother(this.monthlyGrossProfitList, monthlyGrossExpense);
-		this.momGrossProfitGrowth = getLastPeriodGrowthNumber(this.monthlyGrossProfitList);
+		this.grossProfit = (double)Math.round(this.grossProfit);//Round it
+		FinancialUtils.addOneAmountListToAnother(this.monthlyGrossProfitList, monthlyGrossRevenue);
+		FinancialUtils.addOneAmountListToAnother(this.monthlyGrossProfitList, monthlyGrossExpense);
+		this.momGrossProfitGrowth = FinancialUtils.getLastPeriodGrowthNumber(this.monthlyGrossProfitList);
 		this.momGrossProfitGrowth = (double)Math.round(this.momGrossProfitGrowth * 100) / 100;
 		
 		this.netProfit = grossProfit + nonGrossRevenue + nonGrossExpense;
-		addOneAmountListToAnother(this.monthlyNetProfitList, this.monthlyGrossProfitList);
-		addOneAmountListToAnother(this.monthlyNetProfitList, monthlyNonGrossRevenue);
-		addOneAmountListToAnother(this.monthlyNetProfitList, monthlyNonGrossExpense);
-		this.momNetProfitGrowth = getLastPeriodGrowthNumber(this.monthlyNetProfitList);
+		this.netProfit = (double)Math.round(this.netProfit);//Round it
+		FinancialUtils.addOneAmountListToAnother(this.monthlyNetProfitList, this.monthlyGrossProfitList);
+		FinancialUtils.addOneAmountListToAnother(this.monthlyNetProfitList, monthlyNonGrossRevenue);
+		FinancialUtils.addOneAmountListToAnother(this.monthlyNetProfitList, monthlyNonGrossExpense);
+		this.momNetProfitGrowth = FinancialUtils.getLastPeriodGrowthNumber(this.monthlyNetProfitList);
 		this.momNetProfitGrowth = (double)Math.round(this.momNetProfitGrowth * 100) / 100;
 		
 		this.netProfitMargin = this.netProfit/this.revenue * 100;
 		this.netProfitMargin = (double)Math.round(this.netProfitMargin * 100) / 100;
-		super.setFinancialYear("FY 13-14");
-	}
-	
-	public List<Double> addOneAmountListToAnother(List<Double> result, List<Double> target){
-		boolean isThisACopyTask = false; //If result and target are not of same size, simply copy target data to result
-		if(result.size() != target.size()){
-			isThisACopyTask = true;
-			result.clear();
-		}
-		for(int i = 0; i < target.size() - 1; i++){
-			if(isThisACopyTask == false){
-				result.set(i, result.get(i) + target.get(i));	
-			}else{
-				result.add(target.get(i));
-			}
-		}
-		return result;
-	}
-	
-	public List<Double> subtractOneAmountListFromAnother(List<Double> result, List<Double> target){
-		boolean isThisACopyTask = false; //If result and target are not of same size, simply copy target data to result
-		if(result.size() != target.size()){
-			isThisACopyTask = true;
-			result.clear();
-		}
-		for(int i = 0; i < target.size() - 1; i++){
-			if(isThisACopyTask == false){
-				result.set(i, result.get(i) - target.get(i));	
-			}else{
-				result.add(target.get(i) * -1.0 );
-			}
-		}
-		return result;
-	}
-	
-	public Double getLastPeriodGrowthNumber(List<Double> listOfAmounts){
-		int noOfElements = listOfAmounts.size();
-		if(noOfElements <= 1){
-			return 0.0;
-		}else{
-			return (listOfAmounts.get(noOfElements - 1) - listOfAmounts.get(noOfElements - 2))/listOfAmounts.get(noOfElements - 1);
-		}
+				
+		this.formattedRevenue = FinancialUtils.getFormattedAmount(this.revenue);
+		this.formattedGrossProfit = FinancialUtils.getFormattedAmount(this.grossProfit);
+		this.formattedNetProfit = FinancialUtils.getFormattedAmount(this.netProfit);
+		
+		super.setFinancialYear(financialData.getFinancialYear());
 	}
 
 	public Double getRevenue() {
@@ -217,6 +192,33 @@ public class Profitability extends BaseFinancialInfo{
 	public void setMonthlyNetProfitList(List<Double> monthlyNetProfitList) {
 		this.monthlyNetProfitList = monthlyNetProfitList;
 	}
-	
 
+	public String getFormattedRevenue() {
+		return formattedRevenue;
+	}
+
+	public void setFormattedRevenue(String formattedRevenue) {
+		this.formattedRevenue = formattedRevenue;
+	}
+
+	public String getFormattedGrossProfit() {
+		return formattedGrossProfit;
+	}
+
+	public void setFormattedGrossProfit(String formattedGrossProfit) {
+		this.formattedGrossProfit = formattedGrossProfit;
+	}
+
+	public String getFormattedNetProfit() {
+		return formattedNetProfit;
+	}
+
+	public void setFormattedNetProfit(String formattedNetProfit) {
+		this.formattedNetProfit = formattedNetProfit;
+	}
+
+	public void setMomNetProfitGrowth(Double momNetProfitGrowth) {
+		this.momNetProfitGrowth = momNetProfitGrowth;
+	}
+	
 }
