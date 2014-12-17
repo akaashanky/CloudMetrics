@@ -54,10 +54,10 @@ cmApp.controller('KPILiquidityController', ['$scope', '$http', function($scope, 
       var data = new google.visualization.DataTable();
       data.addColumn('string', 'Month');
       data.addColumn('number','Cash In Hand');
-      data.addColumn('number','Current Ratio');
+      data.addColumn('number','Bank Account');
       var noOfMonths = 0;
       var noOfMonthsOfCash = $scope.liquidity.monthlyCashAndCashEqList.length;
-      var noOfMonthsOfCurrentRatio = $scope.liquidity.monthlyCurrentRatioList.length;
+      var noOfMonthsOfCurrentRatio = $scope.liquidity.monthlyBankAccountList.length;
       if(noOfMonthsOfCash < noOfMonthsOfCurrentRatio){
     	  noOfMonths = noOfMonthsOfCash;
       }else{
@@ -67,13 +67,13 @@ cmApp.controller('KPILiquidityController', ['$scope', '$http', function($scope, 
       for(var i = 0; i < noOfMonths; i++){
     	  data.setCell(i, 0, "Month" + i);
     	  data.setCell(i, 1, $scope.liquidity.monthlyCashAndCashEqList[i]);
-    	  data.setCell(i, 2, $scope.liquidity.monthlyCurrentRatioList[i]);
+    	  data.setCell(i, 2, $scope.liquidity.monthlyBankAccountList[i]);
       }
 
       // Set chart options
-      var options = {title: 'Liquidity Trend', curveType: 'function', legend: { position: 'bottom' },
+      var options = {title: 'Monthly Liquidity Growth Trend', curveType: 'function', legend: { position: 'in', textStyle: {color: 'white', fontSize: 14}},
       		backgroundColor:'#252628', lineWidth:3,pointShape:'circle',pointSize:0,
-      		chartArea: {width: '100%', height: '100%'},legend: {position: 'in'},titlePosition: 'in', axisTitlesPosition: 'in',
+      		chartArea: {width: '100%', height: '100%'},titlePosition: 'in', axisTitlesPosition: 'in',
       		hAxis: {textPosition: 'in'}, vAxis: {textPosition: 'in'}, 'titleTextStyle':{'color':'#fff'},
       		colors:['#CAD4F8','#E65165'],curveType:'none',
               vAxes: {

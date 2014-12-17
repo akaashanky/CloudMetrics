@@ -70,9 +70,9 @@ cmApp.controller('KPIProfitabilityController', ['$scope', '$http', function($sco
       }
 
       // Set chart options
-      var options = {title: 'Revenue & Net Profit Trend', curveType: 'function', legend: { position: 'bottom' },
+      var options = {title: 'Monthly Profitability Growth Trend', curveType: 'function',
       		backgroundColor:'#252628', lineWidth:3,pointShape:'circle',pointSize:0,
-      		chartArea: {width: '100%', height: '100%'},legend: {position: 'in'},titlePosition: 'in', axisTitlesPosition: 'in',
+      		chartArea: {width: '100%', height: '100%'},legend: {position: 'in', textStyle: {color: 'white', fontSize: 14}},titlePosition: 'in', axisTitlesPosition: 'in',
       		hAxis: {textPosition: 'in'}, vAxis: {textPosition: 'in'}, 'titleTextStyle':{'color':'#fff'},
       		colors:['#CBE86B','#E94E77'],curveType:'none',
               vAxes: {
