@@ -18,12 +18,12 @@ CTaggingDialog::CTaggingDialog(CWnd* pParent /*=NULL*/)
 
 }
 
-CTaggingDialog::CTaggingDialog(vector<string> groupAndLedgerList, vector<string> *finalTagListForGroupAndLedger, map<string,vector<string>>& taggingMappings, map<string, string>& accountToPrimaryGroupMap, CWnd* pParent)
+CTaggingDialog::CTaggingDialog(vector<string> groupAndLedgerList, vector<string> *finalTagListForGroupAndLedger, map<string,vector<string>>& taggingMappings, map<string, string>& accountToReservedGroupNameMap, CWnd* pParent)
 	: CDialogEx(CTaggingDialog::IDD, pParent)
 {
 	m_groupAndLedgerList = groupAndLedgerList;
 	m_TaggingMappings = taggingMappings;
-	m_accountToPrimaryGroupMap = accountToPrimaryGroupMap;
+	m_accountToReservedGroupNameMap = accountToReservedGroupNameMap;
 	m_nLastDisplayedLedgerIndex = 0;
 	m_finalTagListForGroupAndLedger = finalTagListForGroupAndLedger;
 }
@@ -43,6 +43,7 @@ BEGIN_MESSAGE_MAP(CTaggingDialog, CDialogEx)
 	ON_WM_VSCROLL()
 	ON_BN_CLICKED(IDOK, &CTaggingDialog::OnBnClickedOk)
 	ON_BN_CLICKED(IDCANCEL, &CTaggingDialog::OnBnClickedCancel)
+	ON_STN_CLICKED(IDC_STATIC_TOPHEADLINE, &CTaggingDialog::OnStnClickedStaticTopheadline)
 END_MESSAGE_MAP()
 
 
@@ -72,8 +73,10 @@ BOOL CTaggingDialog::OnInitDialog()
 	for(int i = 0; i < noOfColumnsOnThisPage ; i++)
 	{
 		SetDlgItemText(10000 + i + 1, (LPCTSTR)m_groupAndLedgerList.at(i).c_str());
-		SetDlgItemText(20000 + i + 1, (LPCTSTR)m_accountToPrimaryGroupMap[m_groupAndLedgerList.at(i)].c_str());
-		vector<string> dropDownList = m_TaggingMappings[m_accountToPrimaryGroupMap[m_groupAndLedgerList.at(i)]];
+		SetDlgItemText(20000 + i + 1, (LPCTSTR)GetParentNameForGroupOrLedger(m_groupAndLedgerList.at(i)).c_str());
+		vector<string> dropDownList;
+		vector<string>& dropDownListRef = dropDownList;
+		GetAssociatedFathomTagsForReservedGroup(dropDownListRef, m_groupAndLedgerList.at(i));
 		for(int j = 0; j < dropDownList.size(); j++)
 		{
 			((CComboBox*)GetDlgItem(30000 + i + 1))->AddString((LPCTSTR)dropDownList.at(j).c_str());
@@ -81,8 +84,7 @@ BOOL CTaggingDialog::OnInitDialog()
 		//Make them visible
 		GetDlgItem(10000 + i + 1)->ShowWindow(1);
 		GetDlgItem(20000 + i + 1)->ShowWindow(1);
-		GetDlgItem(30000 + i + 1)->ShowWindow(1);
-		
+		GetDlgItem(30000 + i + 1)->ShowWindow(1);		
 	}
 
 	return true;
@@ -124,9 +126,12 @@ void CTaggingDialog::OnBnClickedOk()
 
 	//Add 7 to the last index. If it still exceeds, just add 7. Else call onok. We are done.
 	//Else we ve to go another screen.
-    if(m_nLastDisplayedLedgerIndex + 7 < m_groupAndLedgerList.size())
+    if(m_nLastDisplayedLedgerIndex + MAX_NOOF_COLUMN_IN_ONE_SHEET < m_groupAndLedgerList.size())
 	{
-		m_nLastDisplayedLedgerIndex += 6;
+		if(m_nLastDisplayedLedgerIndex == 0)
+		   m_nLastDisplayedLedgerIndex += MAX_NOOF_COLUMN_IN_ONE_SHEET - 1;
+		else
+			m_nLastDisplayedLedgerIndex += MAX_NOOF_COLUMN_IN_ONE_SHEET;
 
 		//Hide all controls and clear the combos
 		for(int i = 0; i < MAX_NOOF_COLUMN_IN_ONE_SHEET; i++)
@@ -146,8 +151,10 @@ void CTaggingDialog::OnBnClickedOk()
 		for(int i = 0; i < noOfColumnsOnThisPage ; i++)
 		{
 			SetDlgItemText(10000 + i + 1, (LPCTSTR)m_groupAndLedgerList.at(m_nLastDisplayedLedgerIndex + i + 1).c_str());
-			SetDlgItemText(20000 + i + 1, (LPCTSTR)m_accountToPrimaryGroupMap[m_groupAndLedgerList.at(m_nLastDisplayedLedgerIndex + i + 1)].c_str());
-			vector<string> dropDownList = m_TaggingMappings[m_accountToPrimaryGroupMap[m_groupAndLedgerList.at(m_nLastDisplayedLedgerIndex + i + 1)]];
+			SetDlgItemText(20000 + i + 1, (LPCTSTR)GetParentNameForGroupOrLedger(m_groupAndLedgerList.at(m_nLastDisplayedLedgerIndex + i + 1)).c_str());
+			vector<string> dropDownList;
+		    vector<string>& dropDownListRef = dropDownList;
+			GetAssociatedFathomTagsForReservedGroup(dropDownListRef,m_groupAndLedgerList.at(m_nLastDisplayedLedgerIndex + i + 1));
 			for(int j = 0; j < dropDownList.size(); j++)
 			{
 				((CComboBox*)GetDlgItem(30000 + i + 1))->AddString((LPCTSTR)dropDownList.at(j).c_str());
@@ -165,7 +172,31 @@ void CTaggingDialog::OnBnClickedOk()
 	}
 }
 
+/* =====================================
+ *   GetParentNameForGroupOrLedger
+ * =====================================
+ */
+string CTaggingDialog::GetParentNameForGroupOrLedger(string groupOrLedgerName)
+{
+	return m_accountToReservedGroupNameMap.find(groupOrLedgerName)->second;//should exist. No need to check for else
+}
 
+/* ===========================================
+*   GetAssociatedFathomTagsForReservedGroup
+*  ===========================================
+*/
+void CTaggingDialog::GetAssociatedFathomTagsForReservedGroup(vector<string>& dropDownList,string groupOrLedgerName)
+{
+	string reservedName = m_accountToReservedGroupNameMap.find(groupOrLedgerName)->second;
+	if( m_TaggingMappings.find(reservedName) != m_TaggingMappings.end())
+	{
+		dropDownList = m_TaggingMappings.find(reservedName)->second;
+	}
+	else
+	{
+		dropDownList = m_TaggingMappings.find("")->second;
+	}
+}
 
 
 
@@ -246,4 +277,9 @@ void CTaggingDialog::OnBnClickedCancel()
 {
 	m_finalTagListForGroupAndLedger->clear();
 	CDialogEx::OnCancel();
+}
+
+
+void CTaggingDialog::OnStnClickedStaticTopheadline()
+{
 }

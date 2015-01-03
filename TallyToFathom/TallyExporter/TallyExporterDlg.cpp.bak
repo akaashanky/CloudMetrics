@@ -9,8 +9,6 @@
 #include <afxinet.h>
 #include "TaggingDialog.h"
 
-#include "rapidxml/rapidxml.hpp"
-
 #include <iostream>
 #include <fstream>
 
@@ -18,14 +16,7 @@
 #define new DEBUG_NEW
 #endif
 
-#define MASTER_XML_STORAGE_PATH "data\\generated\\master.xml"
-#define RESTRICTED_NAME_TO_FATHOM_TAG_MAPPING "data\\RestrictedNameToFathomTagMapping.csv"
-#define FATHOM_FORMATTED_FILE "data\\generated\\fathomformatted.csv"
-#define TALLY_TO_FATHOM_ACCOUNTS_MAPPING_FILE "data\\generated\\mapping.csv"
-#define LOG_FILE "data\\generated\\log.txt"
-#define GENERATED_DIR "data\\generated"
 
-using namespace rapidxml;
 // CTallyExporterDlg dialog
 
 
@@ -51,7 +42,6 @@ BEGIN_MESSAGE_MAP(CTallyExporterDlg, CDialogEx)
 	ON_WM_QUERYDRAGICON()
 	ON_BN_CLICKED(IDOK, &CTallyExporterDlg::OnBnClickedOk)
 	ON_BN_CLICKED(ID_GENERATE, &CTallyExporterDlg::OnBnClickedGenerate)
-	ON_BN_CLICKED(IDCANCEL, &CTallyExporterDlg::OnBnClickedCancel)
 END_MESSAGE_MAP()
 
 
@@ -59,6 +49,7 @@ END_MESSAGE_MAP()
 
 BOOL CTallyExporterDlg::OnInitDialog()
 {	
+
 	CDialogEx::OnInitDialog();
 
 	// Set the icon for this dialog.  The framework does this automatically
@@ -67,20 +58,26 @@ BOOL CTallyExporterDlg::OnInitDialog()
 	SetIcon(m_hIcon, FALSE);		// Set small icon
 
 	string errorMsg = "";
-	string& errorMsgRef = errorMsg;
 	//Initialize logging
-	m_logFile.open (LOG_FILE);
+	m_logFile.open ("data\\generated\\log.txt");
 	WriteToLog("Logging initialised", false);
 
-	string& m_companyListXMLRequestRef = m_companyListXMLRequest;
-	//Read company list XMl request file.
-	if(!ReadFileIntoString("data\\companylist_request.xml", m_companyListXMLRequest, errorMsgRef))
+	//Also read the XML request for company list from file.
+	string line1;
+	ifstream companyListXMLFile ("data\\companylist_request.xml");
+	if (companyListXMLFile.is_open())
 	{
-		WriteToLog("Unable to open companylist_request.xml file");
-		errorMsg = "Unable to open companylist_request.xml file";
-	    AfxMessageBox("Unable to open companylist_request.xml file");
+		while ( getline (companyListXMLFile,line1) )
+		{
+			m_companyListXMLRequest += line1;
+		}
+		companyListXMLFile.close();
 	}
-
+	else
+	{
+		errorMsg = "Unable to open company list XML file";
+		AfxMessageBox("Unable to open company list XML file"); 
+	}
 
 	//TODO: Delete
 	LoadTaggingMappings();
@@ -96,7 +93,6 @@ BOOL CTallyExporterDlg::OnInitDialog()
 		SetDlgItemText(IDC_PORT, "9000");
 	}
 	GetCompanyListFromTallyServer(9000, companyListResponseRef);
-	
 	if(companyListResponseRef.companyList.size() == 0)
 	{
 		errorMsg = "No company found. Make sure that at least one company is loaded in Tally";
@@ -110,32 +106,44 @@ BOOL CTallyExporterDlg::OnInitDialog()
          m_ctrlCompanyCombo.AddString(cstr);
 	}
 
-	string& m_balanceSheetXMLRequestRef = m_balanceSheetXMLRequest;
-	if(!ReadFileIntoString("data\\bl.xml", m_balanceSheetXMLRequestRef, errorMsgRef))
+	//Also read the XML request from file.
+	string line;
+	ifstream myfile ("data\\tb.xml");
+	if (myfile.is_open())
 	{
-		WriteToLog("Unable to open bl.xml file");
-		errorMsg = "Unable to open bl.xml file";
-	    AfxMessageBox("Unable to open bl.xml file");
+		while ( getline (myfile,line) )
+		{
+			m_trialBalanceXMLRequest += line;
+		}
+		myfile.close();
 	}
-
-	string& m_trialBalanceXMLRequestRef = m_trialBalanceXMLRequest;
-	if(!ReadFileIntoString("data\\tb.xml", m_trialBalanceXMLRequestRef, errorMsgRef))
+	else
 	{
 		WriteToLog("Unable to open tb.xml file");
 		errorMsg = "Unable to open tb.xml file";
 	    AfxMessageBox("Unable to open tb.xml file");
 	}
 
-	string& m_masterDataXMLRequestRef = m_masterDataXMLRequest;
-	if(!ReadFileIntoString("data\\export_master.xml", m_masterDataXMLRequestRef, errorMsgRef))
+    //Read the export master file
+	string line3;
+	ifstream export_master ("data\\export_master.xml");
+	if (export_master.is_open())
+	{
+		while ( getline (export_master,line3) )
+		{
+			m_masterDataXMLRequest += line3;
+		}
+		export_master.close();
+	}
+	else  
 	{
 		WriteToLog("Unable to open export_master.xml file");
 		errorMsg = "Unable to open export_master.xml file";
 		AfxMessageBox("Unable to open export_master.xml file");
 	}
-   
+	
 	//create the generated dir inside data
-	if (!CreateDirectory(GENERATED_DIR,NULL)) {
+	if (!CreateDirectory("data\\generated",NULL)) {
 	  if (GetLastError() == ERROR_ALREADY_EXISTS) {
 		// directory already exists. Do nothing
 	  } else {
@@ -147,7 +155,7 @@ BOOL CTallyExporterDlg::OnInitDialog()
 	}
 	
 	if(errorMsg == "")
-	  WriteToLog("Select a company to generate Fathom formatted file..");
+	  WriteToLog("Ready..");
 	else
 		WriteToLog(errorMsg);
 
@@ -204,7 +212,6 @@ void CTallyExporterDlg::OnBnClickedOk()
  */
 BOOL CTallyExporterDlg::GetCompanyListFromTallyServer(int port, CompanyListResponse& companyListResponseRef)
 {
-   WriteToLog("Getting company list from Tally.");
    CInternetSession session(_T("My Session"));
    CHttpConnection* pServer = NULL;
    CHttpFile* pFile = NULL;
@@ -212,14 +219,13 @@ BOOL CTallyExporterDlg::GetCompanyListFromTallyServer(int port, CompanyListRespo
    {
       CString strServerName;
       DWORD dwRet = 0;
-	  CString strParam = m_companyListXMLRequest.c_str();
+	  CString strParam = "<ENVELOPE><HEADER><TALLYREQUEST>Export Data</TALLYREQUEST></HEADER><BODY><EXPORTDATA><REQUESTDESC><REPORTNAME>List of Companies</REPORTNAME></REQUESTDESC></EXPORTDATA></BODY></ENVELOPE>";
 	  CString strHeaders  = _T("Content-Type: application/x-www-form-urlencoded;Accept-Encoding: gzip,deflate");
 	  CString acceptedTypes[] = {_T("text/html")};
 
       pServer = session.GetHttpConnection(_T("localhost"),NULL, port, NULL, NULL);
       pFile = pServer->OpenRequest(CHttpConnection::HTTP_VERB_POST, _T(""), NULL,1,(LPCTSTR*)acceptedTypes,NULL,INTERNET_FLAG_EXISTING_CONNECT);
 
-	  WriteToLog("Sending request to Tally.");
 	  pFile->SendRequest(strHeaders, (LPVOID)(LPCTSTR)strParam, strParam.GetLength());
       pFile->QueryInfoStatusCode(dwRet);
 
@@ -234,7 +240,6 @@ BOOL CTallyExporterDlg::GetCompanyListFromTallyServer(int port, CompanyListRespo
       }
 	  else
 	  { 
-		  WriteToLog("Tally did not respond with data. Is Tally running?");
 		  //Do something as server is not sending response as expected.
 	  }
       delete pFile;
@@ -246,7 +251,6 @@ BOOL CTallyExporterDlg::GetCompanyListFromTallyServer(int port, CompanyListRespo
       TCHAR pszError[64];
       pEx->GetErrorMessage(pszError, 64);
       _tprintf_s(_T("%63s"), pszError);
-	  WriteToLog(pszError);
    }
    session.Close();
    return false;
@@ -265,8 +269,6 @@ void CTallyExporterDlg::GetCompanyListFromCSVResponse(CompanyListResponse& compa
 	if (found!=std::string::npos)
 	{//Found <RESPONSE>. So some error
 		//Check for any error
-		WriteToLog("Encountered some error. See the log file");
-		WriteToLog(response, false);
 		found = response.find("<LINEERROR>");
 		if(found != std::string::npos)
 		{
@@ -294,33 +296,16 @@ void CTallyExporterDlg::GetCompanyListFromCSVResponse(CompanyListResponse& compa
 
 }
 
-void BrowseToFile(LPCTSTR filename)
-{
-	char full[_MAX_PATH];
-     _fullpath( full, filename, _MAX_PATH );
-    ITEMIDLIST *pidl = ILCreateFromPath(full);
-    if(pidl) {
-        SHOpenFolderAndSelectItems(pidl,0,0,0);
-        ILFree(pidl);
-    }
-}
 /* ===================================================================
 *         When the "generate" button is clicked
 *  ===================================================================
 */
 void CTallyExporterDlg::OnBnClickedGenerate()
-{	
-	//ShellExecute(NULL, NULL, "/select, data\\generated\\fathomformatted.csv", NULL, NULL, SW_SHOWNORMAL);
-	SetCursor(LoadCursor(NULL, IDC_WAIT));
+{
 	CString companyName;
 	CString& companyNameRef = companyName;
-	CString port;
-	CString& portRef = port;
-
 	this->GetDlgItemTextA(IDC_COMPANY_COMBO,companyNameRef);
 	m_companyName = ((LPCTSTR)companyNameRef);
-	this->GetDlgItemTextA(IDC_PORT,portRef);
-	m_strPort = portRef;
 
 	CString csvStringFromTallyResponse;	
 	CString& csvStringFromTallyResponseRef = csvStringFromTallyResponse;
@@ -342,37 +327,9 @@ void CTallyExporterDlg::OnBnClickedGenerate()
 	//First request for "#Primary" group
 	GetTBXMLForAParent("#Primary",trialBalanceXMLRequestForAParentRef);
 	trialBalanceXMLRequestCSTR = trialBalanceXMLRequestForAParent.c_str();
-	
-	WriteToLog("Getting Trial Balance Data for company: " + m_companyName);
-	if(!GetTallyTBResponse(trialBalanceXMLRequestCSTRRef,allRowsOfTBRef, atoi(m_strPort)))
-	{
-		WriteToLog("Error Whille Getting TB Data");
-		return;
-	}
-	
-	//Append the last row, i.e. Profit and Loss row.
-	string balanceSheetXMLReqStrForACompany = GetRequestXMLForACompany(m_balanceSheetXMLRequest);
-	CString balanceSheetXMLReqStrForACompanyCStr = balanceSheetXMLReqStrForACompany.c_str();
-	CString& balanceSheetXMLReqStrForACompanyCStrRef = balanceSheetXMLReqStrForACompanyCStr;
-	WriteToLog("Getting Balance Sheet Data..");
-	if(!AppendProfitAndLossRowToTBData(balanceSheetXMLReqStrForACompanyCStrRef, allRowsOfTBRef, atoi(m_strPort)))
-	{
-		WriteToLog("Error Getting Balance Sheet Data");
-		return;
-	}
 
-	//Get Master XML data to infer various things.
-	string masterXMLReqStrForACompany = GetRequestXMLForACompany(m_masterDataXMLRequest);
-	CString masterXMLReqStrForACompanyCStr = masterXMLReqStrForACompany.c_str();
-	CString& masterXMLReqStrForACompanyCStrRef = masterXMLReqStrForACompanyCStr;
-	WriteToLog("Getting Master XML Data..");
-	if(!FetchAndSaveMasterXMLFromTally(masterXMLReqStrForACompanyCStrRef, atoi(m_strPort)))
-	{
-		WriteToLog("Error Getting Master XML Data");
-		return;
-	}
+	GetTallyTBResponse(trialBalanceXMLRequestCSTRRef,allRowsOfTBRef, 9000);
 		
-	PopulatePrimaryGroupOrLedgerCharacteristicsMap();
 	//Get the Groups, which are children of primary
 	vector<std::string> tallyPrimaryGroupList;
 	vector<std::string>& tallyPrimaryGroupListRef = tallyPrimaryGroupList;
@@ -390,11 +347,9 @@ void CTallyExporterDlg::OnBnClickedGenerate()
 	GetAllTallyLedgersAndGroupsFromRowList(groupAndLedgerListRef, allRowsOfTBRef);
 	PopulateKnownMappingsForTheLedgersAndGroups(groupAndLedgerListRef, unmappedGroupAndLedgerListRef, allRowsOfTBRef); 
 	
-	WriteToLog("Map Tally Groups/Ledgers to Fathom.");	
-	SetCursor(LoadCursor(NULL, IDC_ARROW));
 	if(unmappedGroupAndLedgerListRef.size() > 0)
 	{
-		CTaggingDialog* taggingDialog = new CTaggingDialog(unmappedGroupAndLedgerList, &finalTagListForGroupAndLedgerAfterTaggingDialog, m_TaggingMappings,m_accountToReservedGroupNameMap, this);
+		CTaggingDialog* taggingDialog = new CTaggingDialog(unmappedGroupAndLedgerList, &finalTagListForGroupAndLedgerAfterTaggingDialog, m_TaggingMappings,m_accountToPrimaryGroupMap, this);
 		taggingDialog->DoModal();
 	}
 
@@ -402,8 +357,7 @@ void CTallyExporterDlg::OnBnClickedGenerate()
 	//Write everything to a file
 	WriteCSVDataToFile(allRowsOfTBRef);
 	WriteMappingToFile(allRowsOfTBRef);
-	WriteToLog("Fathom formatted file generated.");
-	BrowseToFile(FATHOM_FORMATTED_FILE);
+	AfxMessageBox("Fathom Formatted File generated");
 }
 
 /* ===================================================================
@@ -468,7 +422,7 @@ void CTallyExporterDlg::PopulateMappingForARow(string mapping, int index, vector
 void CTallyExporterDlg::GetMappingForKnownLedgerAndGroup(map<string,string>& ledgerAndGroupToTagMapping)
 {
 	string line;
-	ifstream myfile (TALLY_TO_FATHOM_ACCOUNTS_MAPPING_FILE);
+	ifstream myfile ("data\\mapping.csv");
 
 	if (myfile.is_open())
 	{
@@ -495,8 +449,6 @@ void CTallyExporterDlg::GetMappingForKnownLedgerAndGroup(map<string,string>& led
 
 /* ===================================================================
 *         ReplacePrimaryTBAccountsWithTheirChildren
-*  A lot of things happen here. Like negating or positing(!) amounts
-*  Populating the parent "reserved name" from Tally Master data.
 *  ===================================================================
 */
 void CTallyExporterDlg::ReplacePrimaryTBAccountsWithTheirChildren(vector<std::string>& tallyPrimaryGroupListRef, vector<string>& allRowsOfTBRef)
@@ -527,7 +479,7 @@ void CTallyExporterDlg::ReplacePrimaryTBAccountsWithTheirChildren(vector<std::st
 		bool signChangeOfAmountReqd = IsSignChangeOfAmountsNeeded(tallyPrimaryGroupListRef.at(i));
 
 		//if no row is returned, just copy the row from old vector to new
-		if(currentRowsOfTBRef.size() <= 1)
+		if(currentRowsOfTBRef.size() <= 2)
 		{
 			string rowToBePushed = allRowsOfTBRef[i+1];
 			if(signChangeOfAmountReqd)
@@ -535,12 +487,12 @@ void CTallyExporterDlg::ReplacePrimaryTBAccountsWithTheirChildren(vector<std::st
 				ChangeSignOfAmountsInARow(rowToBePushed);
 			}
 			newAllRowsOfTB.push_back(rowToBePushed);
-			m_accountToReservedGroupNameMap[GetGroupFromCSVRow(rowToBePushed)] = GetReservedNameForDisplayName(tallyPrimaryGroupListRef.at(i)); //Also, insert things into map
+			m_accountToPrimaryGroupMap[GetGroupFromCSVRow(rowToBePushed)] = tallyPrimaryGroupListRef.at(i); //Also, insert things into map
 			continue;
 		}
 
 		//insert the children rows into the new vector
-		for(int j = 1; j < currentRowsOfTBRef.size(); j++)
+		for(int j = 1; j < currentRowsOfTBRef.size() - 1; j++)
 		{
 			string rowToBePushed = currentRowsOfTBRef[j];
 			if(signChangeOfAmountReqd)
@@ -548,11 +500,12 @@ void CTallyExporterDlg::ReplacePrimaryTBAccountsWithTheirChildren(vector<std::st
 				ChangeSignOfAmountsInARow(rowToBePushed);
 			}
 			newAllRowsOfTB.push_back(rowToBePushed);
-			m_accountToReservedGroupNameMap[GetGroupFromCSVRow(rowToBePushed)] = GetReservedNameForDisplayName(tallyPrimaryGroupListRef.at(i)); //Also, insert things into map
+			m_accountToPrimaryGroupMap[GetGroupFromCSVRow(rowToBePushed)] = tallyPrimaryGroupListRef.at(i); //Also, insert things into map
 		}
 	}
 	//Put the last open balance row
     string lastRow = allRowsOfTBRef.at(allRowsOfTBRef.size() - 1);
+	ChangeSignOfAmountsInARow(lastRow);
 	newAllRowsOfTB.push_back(lastRow);
 	allRowsOfTBRef = newAllRowsOfTB;
 }
@@ -605,8 +558,6 @@ BOOL CTallyExporterDlg::GetTallyTBResponse(CString& xmlTBRequestRef,vector<strin
 	  CString strHeaders  = _T("Content-Type: application/x-www-form-urlencoded;Accept-Encoding: gzip,deflate");
 	  CString acceptedTypes[] = {_T("text/html")};
 
-	  //CString logContent(_T("Connecting to get TB - localhost at port ") + port);
-	  //WriteToLog((LPCTSTR)logContent);
       pServer = session.GetHttpConnection(_T("localhost"),NULL, port, NULL, NULL);
       pFile = pServer->OpenRequest(CHttpConnection::HTTP_VERB_POST, _T(""), NULL,1,(LPCTSTR*)acceptedTypes,NULL,INTERNET_FLAG_EXISTING_CONNECT);
 
@@ -635,151 +586,9 @@ BOOL CTallyExporterDlg::GetTallyTBResponse(CString& xmlTBRequestRef,vector<strin
       TCHAR pszError[64];
       pEx->GetErrorMessage(pszError, 64);
       _tprintf_s(_T("%63s"), pszError);
-	   WriteToLog("Error encountered while connecting to Tally");
-	  WriteToLog(pszError, false);
-	  return false;
    }
    session.Close();
-   return true;
-}
-
-/* ===================================================================
-*         AppendProfitAndLossRowToTBData
-*  ===================================================================
-*/
-BOOL CTallyExporterDlg::AppendProfitAndLossRowToTBData(CString& balanceSheetXMLReqStrForACompany, vector<string>& allRowsOfTBRef,int port)
-{
-   vector<string> tempStoreForBalanceSheetRows;
-   CInternetSession session(_T("BalanceSheet Session"));
-   CHttpConnection* pServer = NULL;
-   CHttpFile* pFile = NULL;   
-
-   try
-   {
-      CString strServerName;
-      DWORD dwRet = 0;
-	  CString strHeaders  = _T("Content-Type: application/x-www-form-urlencoded;Accept-Encoding: gzip,deflate");
-	  CString acceptedTypes[] = {_T("text/html")};
-
-      pServer = session.GetHttpConnection(_T("localhost"),NULL, port, NULL, NULL);
-      pFile = pServer->OpenRequest(CHttpConnection::HTTP_VERB_POST, _T(""), NULL,1,(LPCTSTR*)acceptedTypes,NULL,INTERNET_FLAG_EXISTING_CONNECT);
-
-	  pFile->SendRequest(strHeaders, (LPVOID)(LPCTSTR)balanceSheetXMLReqStrForACompany, balanceSheetXMLReqStrForACompany.GetLength());
-      pFile->QueryInfoStatusCode(dwRet);
-
-	  CString csvLinesToBeRead;
-	  CString& csvLinesToBeReadRef = csvLinesToBeRead;
-      if (dwRet == HTTP_STATUS_OK)
-      {
-         while (pFile->ReadString(csvLinesToBeReadRef) == TRUE)
-         {			 
-			 tempStoreForBalanceSheetRows.push_back((LPCTSTR)csvLinesToBeReadRef);
-         }
-      }
-	  else
-	  { 
-		  //Do something as server is not sending response as expected.
-	  }
-      delete pFile;
-      delete pServer;
-   }
-   catch (CInternetException* pEx)
-   {
-       //catch errors from WinInet
-      TCHAR pszError[64];
-      pEx->GetErrorMessage(pszError, 64);
-      _tprintf_s(_T("%63s"), pszError);
-	  WriteToLog("Error encountered while connecting to Tally");
-	  WriteToLog(pszError, false);
-	  return false;
-   }
-   session.Close();
-
-   //Now find the "Profit & Loss A/c" from the list of accounts.
-   //TODO: Get this from the XML
-   for(int i = 0; i < tempStoreForBalanceSheetRows.size(); i++)
-   {
-	   string balanceSheetRow = tempStoreForBalanceSheetRows[i];
-	   string& balanceSheetRowRef = balanceSheetRow;
-	   if(GetGroupFromCSVRow(balanceSheetRow) == "Profit & Loss A/c")
-	   {
-		   replaceDoubleCommaInBalanceSheetWithSingle(balanceSheetRowRef);
-		   allRowsOfTBRef.push_back(balanceSheetRowRef);
-		   break;
-	   }
-   }
-   return true;
-}
-
-/* ===================================================================
-*         AppendProfitAndLossRowToTBData
-*  ===================================================================
-*/
-BOOL CTallyExporterDlg::FetchAndSaveMasterXMLFromTally(CString& masterXMLReqStrForACompany, int port)
-{
-   CString masterXMLData;
-	CInternetSession session(_T("Master XML Session"));
-   CHttpConnection* pServer = NULL;
-   CHttpFile* pFile = NULL;   
-
-   try
-   {
-      CString strServerName;
-      DWORD dwRet = 0;
-	  CString strHeaders  = _T("Content-Type: application/x-www-form-urlencoded;Accept-Encoding: gzip,deflate");
-	  CString acceptedTypes[] = {_T("text/html")};
-
-      pServer = session.GetHttpConnection(_T("localhost"),NULL, port, NULL, NULL);
-      pFile = pServer->OpenRequest(CHttpConnection::HTTP_VERB_POST, _T(""), NULL,1,(LPCTSTR*)acceptedTypes,NULL,INTERNET_FLAG_EXISTING_CONNECT);
-
-	  pFile->SendRequest(strHeaders, (LPVOID)(LPCTSTR)masterXMLReqStrForACompany, masterXMLReqStrForACompany.GetLength());
-      pFile->QueryInfoStatusCode(dwRet);
-
-	  CString csvLinesToBeRead;
-	  CString& csvLinesToBeReadRef = csvLinesToBeRead;
-      if (dwRet == HTTP_STATUS_OK)
-      {
-         while (pFile->ReadString(csvLinesToBeReadRef) == TRUE)
-         {			 
-			 masterXMLData += csvLinesToBeReadRef;
-         }
-      }
-	  else
-	  { 
-		  //Do something as server is not sending response as expected.
-	  }
-      delete pFile;
-      delete pServer;
-   }
-   catch (CInternetException* pEx)
-   {
-       //catch errors from WinInet
-      TCHAR pszError[64];
-      pEx->GetErrorMessage(pszError, 64);
-      _tprintf_s(_T("%63s"), pszError);
-	  WriteToLog("Error encountered while getting master XML from Tally");
-	  WriteToLog(pszError, false);
-	  return false;
-   }
-   session.Close();
-
-   //Write it to a file
-   string stringToBeWrittenToFile = masterXMLData;
-   string& stringToBeWrittenToFileRef= stringToBeWrittenToFile;
-   WriteStringToAFile(stringToBeWrittenToFileRef, MASTER_XML_STORAGE_PATH);
-   return true;
-}
-
-/* ===================================================================
-*         GetTBXMLForAParent
-*  ===================================================================
-*/
-string CTallyExporterDlg::GetRequestXMLForACompany(std::string xmlRequestStringForACompany)
-{	
-	string modifiedXMLString = xmlRequestStringForACompany;
-	int indexOfCompanyName = modifiedXMLString.find("{{CompanyName}}");
-	modifiedXMLString.replace(indexOfCompanyName, 15, m_companyName);	
-	return modifiedXMLString;
+   return false;
 }
 
 /* ===================================================================
@@ -807,7 +616,7 @@ void CTallyExporterDlg::WriteCSVDataToFile(vector<string>& allRowsOfTBRef)
 	int noOfMonthsInCSVData = NumberOfMonthsInCSVData(allRowsOfTBRef);
 
 	ofstream myfile;
-	myfile.open (FATHOM_FORMATTED_FILE);
+	myfile.open ("data\\autogenerate.csv");
 
 	//spit out the company name
 	myfile << "Name:," + m_companyName + ",";
@@ -845,13 +654,13 @@ void CTallyExporterDlg::WriteCSVDataToFile(vector<string>& allRowsOfTBRef)
 }
 
 /* ===================================================================
-*         WriteMappingToFile
+*         WriteCSVDataToFile
 *  ===================================================================
 */
 void CTallyExporterDlg::WriteMappingToFile(vector<string>& allRowsOfTBRef)
 {	
 	ofstream myfile;
-	myfile.open (TALLY_TO_FATHOM_ACCOUNTS_MAPPING_FILE);
+	myfile.open ("data\\mapping.csv");
 
 	for(int i = 1; i < allRowsOfTBRef.size(); i++)
 	{
@@ -865,23 +674,6 @@ void CTallyExporterDlg::WriteMappingToFile(vector<string>& allRowsOfTBRef)
 	myfile.close();
 }
 
-/* ===================================================================
-*         WriteMappingToFile
-*  ===================================================================
-*/
-void CTallyExporterDlg::WriteStringToAFile(string& stringToBeWrittenToFile, string relativeFilePathAndName)
-{	
-	ofstream myfile;
-	myfile.open (relativeFilePathAndName);
-
-	myfile << stringToBeWrittenToFile;
-	myfile.close();
-}
-
-/* ===================================================================
-*         processHeaderRow
-*  ===================================================================
-*/
 void CTallyExporterDlg::processHeaderRow(string& headerRowRef, vector<string>& allRowsOfTBRef)
 {
 	string tmpHeaderRow = allRowsOfTBRef.at(0);
@@ -925,35 +717,19 @@ int CTallyExporterDlg::NumberOfMonthsInCSVData(vector<string>& allRowsOfTBRef)
 }
 
 /* ===================================================================
-*         replaceDoubleCommaInBalanceSheetWithSingle
-*  ===================================================================
-*/
-void CTallyExporterDlg::replaceDoubleCommaInBalanceSheetWithSingle(string& balanceSheetRow)
-{
-	size_t index = 0;
-    while (true) {
-         /* Locate the substring to replace. */
-         index = balanceSheetRow.find(",,", index);
-         if (index == std::string::npos) break;
-    
-         /* Make the replacement. */
-         balanceSheetRow.replace(index, 2, ",");
-    
-         /* Advance index forward so the next iteration doesn't pick it up as well. */
-         index += 1;
-     }
-}
-
-/* ===================================================================
 *         IsSignChangeOfAmountsNeeded
 *  ===================================================================
 */
 bool CTallyExporterDlg::IsSignChangeOfAmountsNeeded(string groupName)
 {
-	if(m_primaryGroupOrLedgerCharacteristicMap.find(groupName) != m_primaryGroupOrLedgerCharacteristicMap.end()) 
-	  return m_primaryGroupOrLedgerCharacteristicMap.find(groupName)->second.shouldTheSignChange;
-	else //This condition should not happen. The primary group name must exist in the map.
-		return FALSE;
+	for(int index = 0; index < m_groupsToChangeSign.size(); index++)
+	{
+		if(m_groupsToChangeSign.at(index) == groupName)
+		{
+			return true;
+		}
+	}
+	return false;
 }
 
 /* ===================================================================
@@ -1003,7 +779,7 @@ void CTallyExporterDlg::LoadTaggingMappings()
 {
 	//Read the groups for which sign change is needed.
 	string csvRow;
-	ifstream taggingMappingFile (RESTRICTED_NAME_TO_FATHOM_TAG_MAPPING);
+	ifstream taggingMappingFile ("data\\taggingMapping.csv");
 	if (taggingMappingFile.is_open())
 	{
 		while ( getline (taggingMappingFile,csvRow) )
@@ -1037,129 +813,4 @@ void CTallyExporterDlg::LoadTaggingMappings()
 		taggingMappingFile.close();
 	}
 	else cout << "Unable to open file"; 
-}
-
-void CTallyExporterDlg::WriteToLog(string LogContent, boolean writeStatusToDialog)
-{	
-	if(writeStatusToDialog)
-		SetDlgItemText(IDC_MESSAGE_STATIC, (LPCTSTR)LogContent.c_str());
-	 time_t rawtime;
-     struct tm * timeinfo;
-
-     time (&rawtime);
-     timeinfo = localtime (&rawtime);
-	 m_logFile<< asctime(timeinfo) + LogContent + "\n";
-	 m_logFile.flush();
-}
-
-
-
-void CTallyExporterDlg::OnBnClickedCancel()
-{
-	if(m_logFile.is_open())
-	   m_logFile.close();
-	CDialogEx::OnCancel();
-}
-
-boolean CTallyExporterDlg::ReadFileIntoString(string filePath, string& contentString, string& errorMsg)
-{
-	boolean isSuccess = false;
-	string line;
-	ifstream fileToBeRead (filePath);
-	if (fileToBeRead.is_open())
-	{
-		while ( getline (fileToBeRead,line) )
-		{
-			contentString += line;
-		}
-		fileToBeRead.close();
-		isSuccess = true;
-	}
-	return isSuccess;
-}
-
-/* ======================================================
- *     PopulatePrimaryGroupOrLedgerCharacteristicsMap
- * ======================================================
- */
-boolean CTallyExporterDlg::PopulatePrimaryGroupOrLedgerCharacteristicsMap()
-{
-	string errorMsg = "";
-	string& errorMsgRef = errorMsg;
-	TiXmlDocument *doc = new TiXmlDocument;   
-	string masterXMLContent;
-	string& masterXMLContentRef = masterXMLContent;
-	WriteToLog("Analyzing accounting master data..");
-	ReadFileIntoString(MASTER_XML_STORAGE_PATH, masterXMLContentRef, errorMsgRef);
-	doc->Parse(masterXMLContent.c_str()); 
-	TiXmlElement * XEp_main;
-	const TiXmlNode * node;
-	XEp_main = doc->RootElement ();
-	TinyXPath::xpath_processor xp_proc (XEp_main, "ENVELOPE/BODY/DATA/TALLYMESSAGE/GROUP/PARENT[text()='']/parent::*");    // build the list of all element nodes in the tree
-	TinyXPath::expression_result xresult;
-	xresult = xp_proc.er_compute_xpath();
-	TinyXPath::node_set* ns = xresult.nsp_get_node_set(); 
-	int noOfPrimaryGroupNodes = ns->u_get_nb_node_in_set ();
-	for(int i = 0; i < noOfPrimaryGroupNodes; i++)
-	{
-		LedgerOrGroupCharacteristics ledgerOrGroupCharacteristics;
-		node = ns->XNp_get_node_in_set(i);
-		const TiXmlElement *Xelement = node->ToElement();
-
-		ledgerOrGroupCharacteristics.reservedNameOfItsParent = Xelement->Attribute("RESERVEDNAME");		
-		string shouldChangeSignStr = node->FirstChild("ISDEEMEDPOSITIVE")->FirstChild()->Value();
-		if(shouldChangeSignStr == "Yes")
-		{
-			ledgerOrGroupCharacteristics.shouldTheSignChange = true;
-		}
-		else
-		{
-			ledgerOrGroupCharacteristics.shouldTheSignChange = false;
-		}
-		string groupOrLedgerName = Xelement->Attribute("NAME");
-		m_primaryGroupOrLedgerCharacteristicMap[groupOrLedgerName] = ledgerOrGroupCharacteristics;
-	}
-	WriteToLog("Done Analyzing..");
-	return true;
-}
-
-/*  =================================================
- *   PopulatePrimaryGroupOrLedgerCharacteristicsMap
- *  =================================================
- */
-boolean CTallyExporterDlg::PopulatePrimaryGroupOrLedgerCharacteristicsMap1()
-{
-	xml_document<> doc;
-	xml_node<> * root_node;
-	// Read the xml file into a vector
-	ifstream theFile (MASTER_XML_STORAGE_PATH);
-	vector<char> buffer((istreambuf_iterator<char>(theFile)), istreambuf_iterator<char>());
-	buffer.push_back('\0');
-	// Parse the buffer using the xml file parsing library into doc 
-	doc.parse<0>(&buffer[0]);
-	return false;
-}
-
-/*  =====================================
- *    GetReservedNameForDisplayName
- *  =====================================
- */
-string CTallyExporterDlg::GetReservedNameForDisplayName(string displayName)
-{
-	string reservedName;
-	if(m_primaryGroupOrLedgerCharacteristicMap.find(displayName) != m_primaryGroupOrLedgerCharacteristicMap.end())
-		reservedName = m_primaryGroupOrLedgerCharacteristicMap.find(displayName)->second.reservedNameOfItsParent;
-	else
-		reservedName = displayName;
-	//TODO: Do different things for revenue, expense etc.
-	if(reservedName == "")
-		reservedName = displayName;
-	return reservedName;
-}
-
-BOOL CTallyExporterDlg::DestroyWindow()
-{
-    if(m_logFile.is_open())
-	   m_logFile.close();
-	return CDialogEx::DestroyWindow();
 }

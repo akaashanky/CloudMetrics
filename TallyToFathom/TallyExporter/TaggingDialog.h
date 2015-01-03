@@ -19,7 +19,7 @@ class CTaggingDialog : public CDialogEx
 
 public:
 	CTaggingDialog(CWnd* pParent = NULL);   // standard constructor
-	CTaggingDialog(vector<string> groupAndLedgerList, vector<string> *finalTagListForGroupAndLedger, map<string,vector<string>>& TaggingMappings, map<string, string>& m_accountToPrimaryGroupMap, CWnd* pParent = NULL);
+	CTaggingDialog(vector<string> groupAndLedgerList, vector<string> *finalTagListForGroupAndLedger, map<string,vector<string>>& TaggingMappings, map<string, string>& accountToReservedGroupNameMap, CWnd* pParent = NULL);
 	virtual ~CTaggingDialog();
 
 // Dialog Data
@@ -31,12 +31,14 @@ protected:
 	DECLARE_MESSAGE_MAP()
 public:
 	virtual BOOL OnInitDialog();
+	string CTaggingDialog::GetParentNameForGroupOrLedger(string groupOrLedgerName);
+	void CTaggingDialog::GetAssociatedFathomTagsForReservedGroup(vector<string>& dropDownList,string groupOrLedgerName);
 
 private:
 	vector<string> m_groupAndLedgerList;
 	vector<string> *m_finalTagListForGroupAndLedger;
 	map<string,vector<string>> m_TaggingMappings;
-    map<string, string> m_accountToPrimaryGroupMap;
+    map<string, string> m_accountToReservedGroupNameMap;
 	int m_nLastDisplayedLedgerIndex;
 
 protected:
@@ -48,4 +50,5 @@ public:
 	afx_msg void OnVScroll(UINT nSBCode, UINT nPos, CScrollBar* pScrollBar);
 	afx_msg void OnBnClickedOk();
 	afx_msg void OnBnClickedCancel();
+	afx_msg void OnStnClickedStaticTopheadline();
 };

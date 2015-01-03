@@ -9,6 +9,10 @@
 #include <set>
 #include <sstream>
 #include "afxwin.h"
+#include <fstream>
+#include "xpath_static.h"
+#include "htmlutil.h"
+
 using namespace std;
 
 #pragma once
@@ -24,7 +28,7 @@ public:
 	enum { IDD = IDD_TALLYEXPORTER_DIALOG };
 
 	protected:
-	virtual void DoDataExchange(CDataExchange* pDX);	// DDX/DDV support
+	virtual void DoDataExchange(CDataExchange* pDX);	// FetchAndSaveMasterXMLFromTally/DDV support
 
 
 // Implementation
@@ -41,13 +45,15 @@ public:
 
 private:
 	struct CompanyListResponse{ BOOL isError; std::string errorMsg; std::vector<string> companyList;};
+	struct LedgerOrGroupCharacteristics{ BOOL shouldTheSignChange; std::string reservedNameOfItsParent;};
 	BOOL GetCompanyListFromTallyServer(int port, CompanyListResponse& companyListResponseRef);
 	void GetCompanyListFromCSVResponse(CompanyListResponse& companyListResponse, std::string response);
 	BOOL GetTallyTBResponse(CString& xmlTBRequestRef, vector<string>& allRRowsOfTBRef,int port=9000);
+	BOOL AppendProfitAndLossRowToTBData(CString& balanceSheetXMLReqStrForACompany, vector<string>& allRRowsOfTBRef,int port=9000);
 	void GetAllTallyLedgersAndGroupsFromRowList(vector<std::string>& tallyledgerAndGroupListRef,vector<string>& allRRowsOfTBRef);
 	std::string GetGroupFromCSVRow(std::string& csvRow);
 	void CTallyExporterDlg::ReplacePrimaryTBAccountsWithTheirChildren(vector<std::string>& tallyPrimaryGroupList, vector<string>& allRowsOfTBRef);
-	void GetTBXMLForAParent(std::string parent, std::string& tbXMLStringForAParent);
+	string GetRequestXMLForACompany(std::string xmlRequestStringForAParent);
 	void WriteCSVDataToFile(vector<string>& allRowsOfTBRef);
 	void PopulateKnownMappingsForTheLedgersAndGroups(vector<std::string>& groupAndLedgerListRef, vector<std::string>& unmappedGroupAndLedgerListRef, vector<std::string>& allRowsOfTBRef);
 	void CTallyExporterDlg::GetMappingForKnownLedgerAndGroup(map<string,string>& ledgerAndGroupToTagMapping);
@@ -59,6 +65,15 @@ private:
 	void CTallyExporterDlg::LoadTaggingMappings();
 	void CTallyExporterDlg::PopulateMappingsForTheLedgersAndGroups(vector<std::string>& groupAndLedgerListRef, vector<std::string>& unmappedGroupAndLedgerListRef, vector<std::string>& allRowsOfTBRef);
 	void CTallyExporterDlg::WriteMappingToFile(vector<string>& allRowsOfTBRef);
+	void CTallyExporterDlg::WriteToLog(string LogContent, boolean writeStatusToDialog=true);
+	boolean CTallyExporterDlg::ReadFileIntoString(string filePath, string& contentString, string& errorMsg);
+	void  CTallyExporterDlg::GetTBXMLForAParent(std::string parent, std::string& trialBalanceXMLRequestForAParent);
+	void CTallyExporterDlg::replaceDoubleCommaInBalanceSheetWithSingle(string& balanceSheetRow);
+	BOOL CTallyExporterDlg::FetchAndSaveMasterXMLFromTally(CString& masterXMLReqStrForACompany,int port);
+	void CTallyExporterDlg::WriteStringToAFile(string& stringToBeWrittenToFile, string relativeFilePathAndName);
+	boolean CTallyExporterDlg::PopulatePrimaryGroupOrLedgerCharacteristicsMap();
+	string CTallyExporterDlg::GetReservedNameForDisplayName(string displayName);
+	boolean CTallyExporterDlg::PopulatePrimaryGroupOrLedgerCharacteristicsMap1();
 
 public:
 	
@@ -68,9 +83,18 @@ public:
 	afx_msg void OnBnClickedGenerate();
 
 private:
+	ofstream m_logFile;
+	string m_companyListXMLRequest;
 	std::string m_trialBalanceXMLRequest;	
+	std::string m_balanceSheetXMLRequest;
+    string m_masterDataXMLRequest;
+
 	std::string m_companyName;
 	vector<string> m_groupsToChangeSign;
-	map<string, string> m_accountToPrimaryGroupMap;
+	map<string, string> m_accountToReservedGroupNameMap;
     map<string,vector<string>> m_TaggingMappings;
+	map<string, LedgerOrGroupCharacteristics> m_primaryGroupOrLedgerCharacteristicMap;
+public:
+	afx_msg void OnBnClickedCancel();
+	virtual BOOL DestroyWindow();
 };

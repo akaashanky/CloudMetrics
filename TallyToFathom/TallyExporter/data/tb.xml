@@ -27,7 +27,7 @@
           </REPORT>
 
          <FORM NAME="AutoAutoCol Trial Balance">
-              <TOPPARTS>AutoAutoCol TB Title, AutoAutoCol TB Details, Profit and Loss</TOPPARTS>
+              <TOPPARTS>AutoAutoCol TB Title, AutoAutoCol TB Details</TOPPARTS>
               <HEIGHT>100% Page</HEIGHT> 
               <WIDTH>100% Page</WIDTH> 
               <Option>Set Auto Option : $$SetAutoColumns:SVFromDate,SVToDate</Option>

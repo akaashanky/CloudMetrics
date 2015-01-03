@@ -1,0 +1,41 @@
+<ENVELOPE>
+  <HEADER>
+        <VERSION>1</VERSION>
+        <TALLYREQUEST>Export</TALLYREQUEST>
+        <TYPE>Data</TYPE>
+        <ID>BS Sheet</ID>
+  </HEADER>
+  <BODY>
+    <DESC>
+            <STATICVARIABLES>
+                <EXPLODEFLAG>No</EXPLODEFLAG>
+              <SVEXPORTFORMAT>$$SysName:ASCII</SVEXPORTFORMAT>
+              <SVCURRENTCOMPANY>{{CompanyName}}</SVCURRENTCOMPANY>
+          </STATICVARIABLES>
+
+           <TDL>
+        <TDLMESSAGE>
+         <REPORT NAME="BS Sheet">
+             <Use>Balance Sheet</Use>
+             <REPEAT>SVFromDate, SVToDate</REPEAT>
+             <Variable>DoSetAutoColumn</Variable>
+             <Set>DoSetAutoColumn   : Yes</Set>
+             <Set>DSPRepeatCollection: "Period Collection"</Set>
+          </REPORT>
+          <FORM NAME="BS Sheet">
+             <Use>Balance Sheet</Use>
+             <Option>Set Auto Option : $$SetAutoColumns:SVFromDate,SVToDate</Option>
+          </FORM>
+          <PART NAME="BS Sheet">
+            <Use>Balance Sheet</Use>
+          </PART>
+          <LINE NAME="BS Sheet">
+            <Use>Balance Sheet</Use>
+          </LINE>
+         
+        </TDLMESSAGE>
+      </TDL>
+
+    </DESC>
+  </BODY>
+</ENVELOPE>
