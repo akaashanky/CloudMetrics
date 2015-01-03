@@ -19,6 +19,8 @@ ipch/
 *.opensdf
 *.sdf
 *.suo
+*.aps
+*.v11.suo
 
 # Eclipse #
 ###########
