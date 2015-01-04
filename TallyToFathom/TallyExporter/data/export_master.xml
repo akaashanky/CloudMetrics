@@ -11,6 +11,7 @@
                   <EXPLODEFLAG>No</EXPLODEFLAG>
                   <SVEXPORTFORMAT>$$SysName:XML</SVEXPORTFORMAT>
                   <SVCURRENTCOMPANY>{{CompanyName}}</SVCURRENTCOMPANY>
+                  <ACCOUNTTYPE>Groups</ACCOUNTTYPE>
           </STATICVARIABLES>
 </DESC>
 </BODY>
